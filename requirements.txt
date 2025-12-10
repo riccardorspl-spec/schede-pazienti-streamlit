@@ -4,3 +4,4 @@ fpdf
 qrcode
 Pillow
 openpyxl
+reportlab

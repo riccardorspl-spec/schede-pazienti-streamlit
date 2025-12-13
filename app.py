@@ -1,150 +1,167 @@
 import streamlit as st
 import pandas as pd
-import qrcode
-import io
 import os
+from io import BytesIO
 
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 )
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from reportlab.lib.enums import TA_LEFT
-from reportlab.lib.colors import black
+from reportlab.lib import colors
 
-# ---------------- CONFIG ----------------
+import qrcode
 
-st.set_page_config(page_title="Generatore Schede", layout="wide")
-st.title("🧾 Generatore Schede Esercizi")
-
-LOGO_URL = "https://TUO_LOGO_URL.png"   # ← metti il tuo
+# --------------------------
+# CONFIG
+# --------------------------
+LOGO_PATH = "logo.png"
 BACKGROUND_PATH = "background.png"
 IMAGES_DIR = "images"
 
-CSV_REQUIRED_COLUMNS = [
-    "distretto", "nome", "difficoltà", "descrizione", "link_video"
-]
+st.set_page_config(
+    page_title="Generatore schede",
+    page_icon="🧾",
+    layout="centered"
+)
 
-# ---------------- CSV VALIDATION ----------------
+st.title("🧾 Generatore schede esercizi")
 
-@st.cache_data
-def load_and_validate_csv():
-    df = pd.read_csv("esercizi.csv")
+# --------------------------
+# LOAD CSV
+# --------------------------
+df = pd.read_csv("esercizi.csv")
+df["distretto"] = df["distretto"].astype(str)
 
-    missing_cols = [c for c in CSV_REQUIRED_COLUMNS if c not in df.columns]
-    if missing_cols:
-        st.error(f"❌ Colonne mancanti nel CSV: {missing_cols}")
-        st.stop()
+# --------------------------
+# INPUT UI
+# --------------------------
+nome_paziente = st.text_input("Nome e cognome paziente")
+problematica = st.text_area("Problematica")
 
-    df = df.dropna(subset=["distretto", "nome"])
-    df = df.fillna("")
+distretto = st.selectbox(
+    "Seleziona distretto",
+    sorted(df["distretto"].dropna().unique())
+)
 
-    return df
+df_distretto = df[df["distretto"] == distretto]
 
-df = load_and_validate_csv()
+esercizi = st.multiselect(
+    "Seleziona esercizi",
+    df_distretto["nome"].tolist()
+)
 
-# ---------------- FORM UI ----------------
+serie = {}
+ripetizioni = {}
 
-with st.form("scheda_form"):
+for e in esercizi:
     col1, col2 = st.columns(2)
-
     with col1:
-        paziente = st.text_input("Nome e Cognome Paziente")
-        problematica = st.text_area("Problematica")
-
+        serie[e] = st.text_input(f"Serie – {e}", "3")
     with col2:
-        distretto = st.selectbox(
-            "Distretto",
-            sorted(df["distretto"].unique())
+        ripetizioni[e] = st.text_input(f"Ripetizioni – {e}", "10")
+
+# --------------------------
+# PDF FUNCTIONS
+# --------------------------
+def background(canvas, doc):
+    if os.path.exists(BACKGROUND_PATH):
+        canvas.drawImage(
+            BACKGROUND_PATH,
+            0,
+            0,
+            width=A4[0],
+            height=A4[1],
+            preserveAspectRatio=True,
+            mask='auto'
         )
 
-    df_distretto = df[df["distretto"] == distretto]
-
-    esercizi_scelti = st.multiselect(
-        "Seleziona esercizi",
-        df_distretto["nome"].tolist()
-    )
-
-    esercizi_finali = []
-
-    for nome in esercizi_scelti:
-        st.markdown(f"**{nome}**")
-        c1, c2 = st.columns(2)
-        serie = c1.text_input("Serie", key=f"serie_{nome}")
-        rip = c2.text_input("Ripetizioni", key=f"rip_{nome}")
-
-        riga = df_distretto[df_distretto["nome"] == nome].iloc[0]
-        esercizi_finali.append({
-            "nome": nome,
-            "serie": serie,
-            "ripetizioni": rip,
-            "descrizione": riga["descrizione"],
-            "link_video": riga["link_video"]
-        })
-
-    genera = st.form_submit_button("📄 Genera PDF")
-
-# ---------------- PDF GENERATION ----------------
-
 def genera_pdf():
-    buffer = io.BytesIO()
+    buffer = BytesIO()
+
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=2*cm,
+        topMargin=3.5*cm,
         bottomMargin=2*cm
     )
 
     styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="Titolo",
+        fontSize=18,
+        alignment=1,
+        spaceAfter=20
+    ))
+
     elements = []
 
-    # Logo
-    elements.append(Image(LOGO_URL, width=4*cm, height=2*cm))
-    elements.append(Spacer(1, 12))
+    # HEADER
+    header_table = []
 
-    elements.append(Paragraph(f"<b>Paziente:</b> {paziente}", styles["Normal"]))
+    if os.path.exists(LOGO_PATH):
+        header_table.append([
+            Image(LOGO_PATH, width=4*cm, height=2*cm),
+            Paragraph("<b>Generatore schede esercizi</b>", styles["Titolo"])
+        ])
+    else:
+        header_table.append([
+            "",
+            Paragraph("<b>Generatore schede esercizi</b>", styles["Titolo"])
+        ])
+
+    header = Table(header_table, colWidths=[5*cm, 11*cm])
+    header.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (1, 0), (1, 0), "CENTER"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+    ]))
+
+    elements.append(header)
+
+    # PAZIENTE
+    elements.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Normal"]))
     elements.append(Paragraph(f"<b>Problematica:</b> {problematica}", styles["Normal"]))
     elements.append(Spacer(1, 20))
 
-    for ex in esercizi_finali:
-        row = []
+    # ESERCIZI
+    for e in esercizi:
+        row = df_distretto[df_distretto["nome"] == e].iloc[0]
 
-        # --- Immagine esercizio ---
-        img_path = os.path.join(IMAGES_DIR, f"{ex['nome']}.png")
-        if os.path.exists(img_path):
-            img = Image(img_path, width=4*cm, height=4*cm)
-        else:
-            img = Spacer(4*cm, 4*cm)
+        img_path = os.path.join(IMAGES_DIR, f"{e}.png")
 
-        # --- Descrizione ---
-        testo = f"""
-        <b>{ex['nome']}</b><br/>
-        Serie: {ex['serie']}<br/>
-        Ripetizioni: {ex['ripetizioni']}<br/><br/>
-        {ex['descrizione']}
-        """
-        desc = Paragraph(testo, styles["Normal"])
-
-        # --- QR CODE ---
-        qr = qrcode.make(ex["link_video"])
-        qr_buf = io.BytesIO()
+        # QR
+        qr = qrcode.make(row["link_video"])
+        qr_buf = BytesIO()
         qr.save(qr_buf)
         qr_buf.seek(0)
-        qr_img = Image(qr_buf, width=3*cm, height=3*cm)
 
-        table = Table(
-            [[img, desc, qr_img]],
-            colWidths=[5*cm, 8*cm, 3*cm]
-        )
+        img_ex = Image(img_path, width=4*cm, height=4*cm) if os.path.exists(img_path) else ""
+        img_qr = Image(qr_buf, width=3*cm, height=3*cm)
 
+        data = [
+            [
+                img_ex,
+                Paragraph(
+                    f"<b>{e}</b><br/>"
+                    f"{row['descrizione']}<br/><br/>"
+                    f"<b>Serie:</b> {serie[e]} &nbsp;&nbsp; "
+                    f"<b>Rip:</b> {ripetizioni[e]}",
+                    styles["Normal"]
+                ),
+                img_qr
+            ]
+        ]
+
+        table = Table(data, colWidths=[5*cm, 8*cm, 3*cm])
         table.setStyle(TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 6),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
         ]))
 
         elements.append(table)
@@ -159,61 +176,14 @@ def genera_pdf():
     buffer.seek(0)
     return buffer
 
-def background(canvas, doc):
-    if os.path.exists(BACKGROUND_PATH):
-        canvas.drawImage(
-            BACKGROUND_PATH, 0, 0,
-            width=A4[0], height=A4[1]
-        )
-
-# ---------------- DOWNLOAD ----------------
-
-if genera and paziente:
+# --------------------------
+# GENERATE
+# --------------------------
+if st.button("📄 Genera PDF"):
     pdf = genera_pdf()
-    st.success("Scheda generata!")
     st.download_button(
         "⬇️ Scarica PDF",
         pdf,
-        file_name=f"{paziente}_scheda.pdf",
+        file_name=f"Scheda_{nome_paziente}.pdf",
         mime="application/pdf"
     )
-
-
-    file = "storico_pazienti.csv"
-    df_new = pd.DataFrame([record])
-
-    if os.path.exists(file):
-        df_old = pd.read_csv(file)
-        df_new = pd.concat([df_old, df_new])
-
-    df_new.to_csv(file, index=False)
-
-
-# -------------------------------------------------
-# GENERA
-# -------------------------------------------------
-if st.button("📄 Genera PDF"):
-    if not nome_paziente or not esercizi:
-        st.error("Inserisci nome e almeno un esercizio")
-    else:
-        pdf = genera_pdf()
-        salva_storico()
-
-        st.success("Scheda generata")
-        st.download_button(
-            "⬇️ Scarica PDF",
-            data=pdf,
-            file_name=f"Scheda_{nome_paziente}.pdf",
-            mime="application/pdf"
-        )
-
-
-# -------------------------------------------------
-# STORICO
-# -------------------------------------------------
-if os.path.exists("storico_pazienti.csv"):
-    with st.expander("📚 Storico pazienti"):
-        st.dataframe(pd.read_csv("storico_pazienti.csv"))
-
-
-

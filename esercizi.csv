@@ -1,17 +1,19 @@
-﻿distretto,;nome,;difficoltà,;descrizione,;link_video
-collo,;"Stretch laterale collo",;Facile,;"""Inclina lentamente la testa verso la spalla destra e sinistra"",";link_video1
-collo;"Rotazioni cervicali";Facile;"""Ruota lentamente il collo in cerchio, 5 volte per lato""";link_video1
-spalla;"Elevazioni laterali braccia";Medio;"""Solleva le braccia lateralmente fino all’altezza spalle""";link_video1
-spalla;"Rotazioni spalla";Facile;"""Ruota le spalle avanti e indietro 10 volte""";link_video1
-gomito;"Estensione gomito";Facile;"""Piega e estendi lentamente il gomito con manubrio leggero""";link_video1
-polso;"Flessione ed estensione";Facile;"""Piega e stendi il polso lentamente""";link_video1
-mano;"Apertura dita";Facile;"""Apri e chiudi le dita più volte""";link_video1
-core;Plank;Medio;"""Mantieni posizione plank 20-30 secondi""";link_video1
-core;Crunch;Facile;"""Contrai l’addome e solleva le spalle da terra""";link_video1
-anca;"Ponte glutei";Facile;"""Solleva il bacino mantenendo piedi a terra""";link_video1
-ginocchio;"Squat corpo libero;Medio;"""Mantieni ginocchia allineate con le punte dei piedi""";link_video1
-ginocchio;Affondi;Medio;"""Avanza una gamba e piega entrambe le ginocchia""";link_video1
-caviglia;"Circonduzioni caviglia";Facile;"""Ruota la caviglia in senso orario e antiorario""";link_video1
-neurodinamica;"Slump test";Difficile;"""Posizione seduta, testa piegata in avanti, estendi gamba""";link_video1
+distretto,nome,serie,ripetizioni,difficoltà,descrizione,link_video
+collo,Stretch laterale collo,,,"Facile","Inclina lentamente la testa verso la spalla destra e sinistra",link_video1
+collo,Rotazioni cervicali,,,"Facile","Ruota lentamente il collo in cerchio, 5 volte per lato",link_video1
+spalla,Elevazioni laterali braccia,,,"Medio","Solleva le braccia lateralmente fino all’altezza delle spalle",link_video1
+spalla,Rotazioni spalla,,,"Facile","Ruota le spalle avanti e indietro per 10 ripetizioni",link_video1
+gomito,Estensione gomito,,,"Facile","Piega ed estendi lentamente il gomito con un manubrio leggero",link_video1
+polso,Flessione ed estensione polso,,,"Facile","Piega e stendi il polso in modo controllato",link_video1
+mano,Apertura dita,,,"Facile","Apri e chiudi le dita più volte in modo fluido",link_video1
+core,Plank,,,"Medio","Mantieni la posizione di plank per 20–30 secondi",link_video1
+core,Crunch,,,"Facile","Contrai l’addome e solleva le spalle da terra",link_video1
+anca,Ponte glutei,,,"Facile","Solleva il bacino mantenendo i piedi a terra",link_video1
+ginocchio,Squat corpo libero,,,"Medio","Mantieni le ginocchia allineate con le punte dei piedi",link_video1
+ginocchio,Affondi,,,"Medio","Avanza con una gamba e piega entrambe le ginocchia",link_video1
+caviglia,Circonduzioni caviglia,,,"Facile","Ruota la caviglia in senso orario e antiorario",link_video1
+neurodinamica,Slump test,,,"Difficile","Da seduto, fletti la testa in avanti ed estendi una gamba",link_video1
+
+
 
 

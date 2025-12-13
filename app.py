@@ -1,8 +1,5 @@
 import streamlit as st
 import pandas as pd
-import os
-from io import BytesIO
-
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 )
@@ -10,38 +7,29 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-
+from reportlab.pdfgen import canvas
+from io import BytesIO
 import qrcode
+import os
 
 # --------------------------
-# CONFIG
+# Streamlit UI
 # --------------------------
-LOGO_PATH = "logo.png"
-BACKGROUND_PATH = "background.png"
-IMAGES_DIR = "images"
+st.set_page_config(page_title="Generatore schede", layout="centered")
 
-st.set_page_config(
-    page_title="Generatore schede",
-    page_icon="🧾",
-    layout="centered"
-)
+st.title("Generatore schede esercizi")
 
-st.title("🧾 Generatore schede esercizi")
-
-# --------------------------
-# LOAD CSV
-# --------------------------
 df = pd.read_csv("esercizi.csv")
-df["distretto"] = df["distretto"].astype(str)
+df = df.fillna("")
 
-# --------------------------
-# INPUT UI
-# --------------------------
-nome_paziente = st.text_input("Nome e cognome paziente")
-problematica = st.text_area("Problematica")
+col1, col2 = st.columns(2)
+with col1:
+    nome_paziente = st.text_input("Nome e cognome paziente")
+with col2:
+    problematica = st.text_input("Problematica")
 
 distretto = st.selectbox(
-    "Seleziona distretto",
+    "Seleziona il distretto",
     sorted(df["distretto"].dropna().unique())
 )
 
@@ -56,36 +44,50 @@ serie = {}
 ripetizioni = {}
 
 for e in esercizi:
-    col1, col2 = st.columns(2)
-    with col1:
-        serie[e] = st.text_input(f"Serie – {e}", "3")
-    with col2:
-        ripetizioni[e] = st.text_input(f"Ripetizioni – {e}", "10")
+    c1, c2 = st.columns(2)
+    with c1:
+        serie[e] = st.number_input(f"Serie – {e}", 1, 10, 3)
+    with c2:
+        ripetizioni[e] = st.number_input(f"Ripetizioni – {e}", 1, 30, 10)
 
 # --------------------------
-# PDF FUNCTIONS
+# PDF Background
 # --------------------------
-def background(canvas, doc):
-    if os.path.exists(BACKGROUND_PATH):
-        canvas.drawImage(
-            BACKGROUND_PATH,
-            0,
-            0,
-            width=A4[0],
-            height=A4[1],
-            preserveAspectRatio=True,
-            mask='auto'
-        )
+class BackgroundCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        self.bg_image = "background.png"
+        super().__init__(*args, **kwargs)
 
-def genera_pdf():
+    def drawPageBackground(self):
+        if os.path.exists(self.bg_image):
+            self.drawImage(
+                self.bg_image,
+                0,
+                0,
+                width=A4[0],
+                height=A4[1]
+            )
+
+    def showPage(self):
+        self.drawPageBackground()
+        super().showPage()
+
+    def save(self):
+        self.drawPageBackground()
+        super().save()
+
+# --------------------------
+# Generazione PDF
+# --------------------------
+if st.button("Genera PDF") and esercizi:
+
     buffer = BytesIO()
-
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
         rightMargin=2*cm,
         leftMargin=2*cm,
-        topMargin=3.5*cm,
+        topMargin=2.5*cm,
         bottomMargin=2*cm
     )
 
@@ -94,99 +96,113 @@ def genera_pdf():
         name="Titolo",
         fontSize=18,
         alignment=1,
-        spaceAfter=20
+        spaceAfter=10
+    ))
+    styles.add(ParagraphStyle(
+        name="Testo",
+        fontSize=11,
+        spaceAfter=6
     ))
 
-    elements = []
+    story = []
 
-    # HEADER
-    header_table = []
+    # --------------------------
+    # Header con logo + titolo
+    # --------------------------
+    logo = Image("logo.png", width=3.5*cm, height=3.5*cm)
+    titolo = Paragraph(
+        "<b>Programma esercizi personalizzato</b>",
+        styles["Titolo"]
+    )
 
-    if os.path.exists(LOGO_PATH):
-        header_table.append([
-            logo = Image(LOGO_PATH, width=4*cm),
-        logo.hAlign = "LEFT"
-            Paragraph("<b>Programma esercizi personalizzato</b>", styles["Titolo"])
-        ])
-    else:
-        header_table.append([
-            "",
-            Paragraph("<b>Generatore schede esercizi</b>", styles["Titolo"])
-        ])
+    header = Table(
+        [[logo, titolo]],
+        colWidths=[4*cm, 12*cm]
+    )
 
-    header = Table(header_table, colWidths=[5*cm, 11*cm])
     header.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (1, 0), (1, 0), "CENTER"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
     ]))
 
-    elements.append(header)
+    story.append(header)
 
-    # PAZIENTE
-    elements.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Normal"]))
-    elements.append(Paragraph(f"<b>Problematica:</b> {problematica}", styles["Normal"]))
-    elements.append(Spacer(1, 20))
+    # Linea sotto header
+    linea_header = Table([[""]], colWidths=[18*cm])
+    linea_header.setStyle(TableStyle([
+        ("LINEBELOW", (0, 0), (-1, -1), 0.75, colors.grey)
+    ]))
 
-    # ESERCIZI
+    story.append(Spacer(1, 0.3*cm))
+    story.append(linea_header)
+    story.append(Spacer(1, 0.8*cm))
+
+    story.append(Paragraph(
+        f"<b>Paziente:</b> {nome_paziente}<br/>"
+        f"<b>Problematica:</b> {problematica}",
+        styles["Testo"]
+    ))
+
+    story.append(Spacer(1, 0.8*cm))
+
+    # --------------------------
+    # Esercizi (CARD)
+    # --------------------------
     for e in esercizi:
         row = df_distretto[df_distretto["nome"] == e].iloc[0]
 
-        img_path = os.path.join(IMAGES_DIR, f"{e}.png")
+        # Immagine esercizio
+        img_path = f"images/{e}.png"
+        if os.path.exists(img_path):
+            img = Image(img_path, width=4*cm, height=4*cm)
+        else:
+            img = Spacer(4*cm, 4*cm)
 
-        # QR
+        # QR Code
         qr = qrcode.make(row["link_video"])
         qr_buf = BytesIO()
-        qr.save(qr_buf)
+        qr.save(qr_buf, format="PNG")
         qr_buf.seek(0)
+        qr_img = Image(qr_buf, width=3*cm, height=3*cm)
 
-        img_ex = Image(img_path, width=4*cm, height=4*cm) if os.path.exists(img_path) else ""
-        img_qr = Image(qr_buf, width=3*cm, height=3*cm)
+        testo = Paragraph(
+            f"<b>{e}</b><br/>"
+            f"{row['descrizione']}<br/>"
+            f"<b>Serie:</b> {serie[e]} &nbsp;&nbsp;"
+            f"<b>Ripetizioni:</b> {ripetizioni[e]}",
+            styles["Testo"]
+        )
 
-        data = [
-            [
-                img_ex,
-                Paragraph(
-                    f"<b>{e}</b><br/>"
-                    f"{row['descrizione']}<br/><br/>"
-                    f"<b>Serie:</b> {serie[e]} &nbsp;&nbsp; "
-                    f"<b>Rip:</b> {ripetizioni[e]}",
-                    styles["Normal"]
-                ),
-                img_qr
-            ]
-        ]
+        card = Table(
+            [[img, testo, qr_img]],
+            colWidths=[4.5*cm, 8.5*cm, 3*cm]
+        )
 
-        table = Table(data, colWidths=[5*cm, 8*cm, 3*cm])
-        table.setStyle(TableStyle([
+        card.setStyle(TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+            ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+            ("INNERPADDING", (0, 0), (-1, -1), 6),
         ]))
 
-        elements.append(table)
-        elements.append(Spacer(1, 20))
+        story.append(card)
 
-    doc.build(
-        elements,
-        onFirstPage=background,
-        onLaterPages=background
-    )
+        # Linea tra esercizi
+        linea_es = Table([[""]], colWidths=[18*cm])
+        linea_es.setStyle(TableStyle([
+            ("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.lightgrey)
+        ]))
+
+        story.append(Spacer(1, 0.4*cm))
+        story.append(linea_es)
+        story.append(Spacer(1, 0.6*cm))
+
+    doc.build(story, canvasmaker=BackgroundCanvas)
 
     buffer.seek(0)
-    return buffer
-
-# --------------------------
-# GENERATE
-# --------------------------
-if st.button("📄 Genera PDF"):
-    pdf = genera_pdf()
     st.download_button(
-        "⬇️ Scarica PDF",
-        pdf,
-        file_name=f"Scheda_{nome_paziente}.pdf",
+        "Scarica PDF",
+        buffer,
+        file_name=f"Programma_{nome_paziente}.pdf",
         mime="application/pdf"
     )
-
-

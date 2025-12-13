@@ -1,7 +1,7 @@
 streamlit
 pandas
-fpdf
-qrcode
-Pillow
-openpyxl
 reportlab
+qrcode
+pillow
+streamlit-drawable-canvas
+

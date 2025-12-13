@@ -104,7 +104,8 @@ def genera_pdf():
 
     if os.path.exists(LOGO_PATH):
         header_table.append([
-            Image(LOGO_PATH, width=4*cm, height=2*cm),
+            logo = Image(LOGO_PATH, width=4*cm),
+        logo.hAlign = "LEFT"
             Paragraph("<b>Programma esercizi personalizzato</b>", styles["Titolo"])
         ])
     else:
@@ -187,4 +188,5 @@ if st.button("📄 Genera PDF"):
         file_name=f"Scheda_{nome_paziente}.pdf",
         mime="application/pdf"
     )
+
 

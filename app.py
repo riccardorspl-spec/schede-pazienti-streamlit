@@ -110,6 +110,7 @@ def draw_background_and_footer(canvas, doc):
 # --------------------------------------------------
 def genera_pdf(scheda):
     buffer = io.BytesIO()
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
     doc = SimpleDocTemplate(
         buffer,
@@ -128,16 +129,16 @@ def genera_pdf(scheda):
     story = []
 
     # ---------------- HEADER ----------------
-    if os.path.exists("logo.png"):
-        logo = Image("logo.png", width=3.5 * cm, height=3.5 * cm, kind="proportional")
+    if os.path.exists(os.path.join(BASE_DIR, "logo.png")):
+        logo = Image(os.path.join(BASE_DIR, "logo.png"), width=3.5*cm, height=3.5*cm, kind="proportional")
     else:
-        logo = Spacer(3.5 * cm, 3.5 * cm)
+        logo = Spacer(3.5*cm, 3.5*cm)
 
     title = Paragraph("<b>Programma esercizi personalizzato</b>", styles["HeaderTitle"])
 
     header = Table(
         [[logo, title]],
-        colWidths=[4 * cm, 12 * cm],
+        colWidths=[4*cm, 12*cm],
         style=[
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -149,31 +150,32 @@ def genera_pdf(scheda):
 
     story.append(Table(
         [[""]],
-        colWidths=[16 * cm],
-        style=[("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.grey)]
+        colWidths=[16*cm],
+        style=[("LINEBELOW", (0,0), (-1,-1), 0.5, colors.grey)]
     ))
 
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1,12))
     story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
     story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
-    story.append(Spacer(1, 16))
+    story.append(Spacer(1,16))
 
     # ---------------- ESERCIZI ----------------
     for idx, ex in enumerate(scheda):
         # cerca immagine esercizio in qualsiasi formato
-        img_files = glob.glob(f"images/{ex['nome']}.*")
+        img_files = glob.glob(os.path.join(BASE_DIR, "images", f"{ex['nome']}.*"))
         if img_files:
-            img_path = img_files[0]  # prende la prima trovata
-            esercizio_img = Image(img_path, width=3.5 * cm, height=3.5 * cm, kind="proportional")
+            img_path = img_files[0]
+            esercizio_img = Image(img_path, width=3.5*cm, height=3.5*cm, kind="proportional")
         else:
-            esercizio_img = Spacer(3.5 * cm, 3.5 * cm)
+            print(f"Attenzione: nessuna immagine trovata per {ex['nome']}")
+            esercizio_img = Spacer(3.5*cm, 3.5*cm)
 
         # QR
         qr = qrcode.make(ex["link_video"])
         qr_buf = io.BytesIO()
         qr.save(qr_buf)
         qr_buf.seek(0)
-        qr_img = Image(qr_buf, width=2.5 * cm, height=2.5 * cm, kind="proportional")
+        qr_img = Image(qr_buf, width=2.5*cm, height=2.5*cm, kind="proportional")
 
         # testo esercizio
         testo = Paragraph(
@@ -189,22 +191,22 @@ def genera_pdf(scheda):
         # card esercizio
         card = Table(
             [[esercizio_img, testo, qr_img]],
-            colWidths=[4 * cm, 9 * cm, 3 * cm],
+            colWidths=[4*cm, 9*cm, 3*cm],
             style=[
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("BOX", (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("LEFTPADDING", (0,0), (-1,-1), 6),
+                ("RIGHTPADDING", (0,0), (-1,-1), 6),
+                ("TOPPADDING", (0,0), (-1,-1), 6),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 6),
             ]
         )
 
         # Append card in KeepTogether + spacer
-        story.append(KeepTogether([card, Spacer(1, 14)]))
+        story.append(KeepTogether([card, Spacer(1,14)]))
 
         # Ogni 4 esercizi, forza PageBreak
-        if (idx + 1) % 4 == 0:
+        if (idx+1) % 4 == 0:
             story.append(PageBreak())
 
     # costruzione PDF

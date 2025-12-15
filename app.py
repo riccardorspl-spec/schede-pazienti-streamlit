@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import io
 import qrcode
+import requests
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -19,50 +20,36 @@ from reportlab.lib import colors
 
 
 # --------------------------------------------------
-# CONFIG STREAMLIT
+# STREAMLIT CONFIG
 # --------------------------------------------------
-st.set_page_config(
-    page_title="Programma esercizi personalizzato",
-    layout="centered"
-)
+st.set_page_config(page_title="Programma esercizi personalizzato")
 
 st.title("Programma esercizi personalizzato")
 st.divider()
 
 
 # --------------------------------------------------
-# CARICAMENTO E VALIDAZIONE CSV
+# LOAD CSV
 # --------------------------------------------------
 @st.cache_data
 def load_csv():
     df = pd.read_csv("esercizi.csv")
-
-    required_cols = [
-        "distretto",
-        "nome",
-        "difficoltà",
-        "descrizione",
-        "link_video"
-    ]
-
-    for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"Colonna mancante nel CSV: {col}")
-
     df = df.fillna("")
     return df
 
 
 df = load_csv()
 
-distretti = sorted(df["distretto"].unique())
-distretto_sel = st.selectbox("Seleziona il distretto", distretti)
+distretto = st.selectbox(
+    "Seleziona il distretto",
+    sorted(df["distretto"].unique())
+)
 
-esercizi_sel = df[df["distretto"] == distretto_sel]
+esercizi_sel = df[df["distretto"] == distretto]
 
 
 # --------------------------------------------------
-# FUNZIONE BACKGROUND PDF (CORRETTA)
+# PDF BACKGROUND
 # --------------------------------------------------
 def draw_background(canvas, doc):
     if os.path.exists("background.png"):
@@ -76,7 +63,7 @@ def draw_background(canvas, doc):
 
 
 # --------------------------------------------------
-# GENERAZIONE PDF
+# PDF GENERATOR
 # --------------------------------------------------
 def genera_pdf(esercizi):
     buffer = io.BytesIO()
@@ -84,8 +71,8 @@ def genera_pdf(esercizi):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        rightMargin=2 * cm,
         leftMargin=2 * cm,
+        rightMargin=2 * cm,
         topMargin=2 * cm,
         bottomMargin=2 * cm
     )
@@ -96,15 +83,14 @@ def genera_pdf(esercizi):
         name="Titolo",
         fontSize=18,
         alignment=1,
-        spaceAfter=20
+        spaceAfter=16
     ))
 
     styles.add(ParagraphStyle(
-        name="NomeEsercizio",
+        name="Nome",
         fontSize=12,
-        spaceAfter=6,
-        leading=14,
-        fontName="Helvetica-Bold"
+        fontName="Helvetica-Bold",
+        spaceAfter=4
     ))
 
     styles.add(ParagraphStyle(
@@ -115,25 +101,27 @@ def genera_pdf(esercizi):
 
     story = []
 
-    # LOGO (proporzioni corrette)
+    # -------- LOGO (DOWNLOAD + BYTESIO) --------
     logo_url = "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png"
-    story.append(Image(logo_url, width=4 * cm, height=4 * cm))
+    response = requests.get(logo_url, timeout=10)
+    logo_bytes = io.BytesIO(response.content)
+
+    story.append(Image(logo_bytes, width=4 * cm, height=4 * cm))
     story.append(Spacer(1, 12))
 
-    # TITOLO
+    # -------- TITOLO --------
     story.append(Paragraph("Programma esercizi personalizzato", styles["Titolo"]))
-    story.append(Spacer(1, 12))
 
-    # LINEA SOTTILE
     story.append(Table(
         [[""]],
         colWidths=[16 * cm],
         style=[("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.grey)]
     ))
-    story.append(Spacer(1, 16))
 
+    story.append(Spacer(1, 14))
+
+    # -------- ESERCIZI --------
     for _, ex in esercizi.iterrows():
-        # QR CODE
         qr = qrcode.make(ex["link_video"])
         qr_buffer = io.BytesIO()
         qr.save(qr_buffer)
@@ -142,10 +130,10 @@ def genera_pdf(esercizi):
         qr_img = Image(qr_buffer, width=3 * cm, height=3 * cm)
 
         testo = [
-            Paragraph(ex["nome"], styles["NomeEsercizio"]),
+            Paragraph(ex["nome"], styles["Nome"]),
             Paragraph(f"<b>Difficoltà:</b> {ex['difficoltà']}", styles["Testo"]),
             Spacer(1, 4),
-            Paragraph(ex["descrizione"], styles["Testo"])
+            Paragraph(ex["descrizione"], styles["Testo"]),
         ]
 
         card = Table(
@@ -175,9 +163,9 @@ def genera_pdf(esercizi):
 
 
 # --------------------------------------------------
-# UI STREAMLIT
+# UI
 # --------------------------------------------------
-st.subheader(f"Esercizi per: {distretto_sel}")
+st.subheader(f"Esercizi – {distretto}")
 
 for _, row in esercizi_sel.iterrows():
     st.markdown(f"**{row['nome']}**")

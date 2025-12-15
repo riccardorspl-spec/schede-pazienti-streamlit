@@ -14,7 +14,7 @@ from reportlab.lib import colors
 
 
 # --------------------------------------------------
-# CONFIG STREAMLIT
+# STREAMLIT CONFIG
 # --------------------------------------------------
 st.set_page_config(page_title="Programma esercizi personalizzato")
 st.title("Programma esercizi personalizzato")
@@ -28,6 +28,7 @@ st.divider()
 def load_csv():
     df = pd.read_csv("esercizi.csv")
     df = df.fillna("")
+    df["distretto"] = df["distretto"].astype(str)
     return df
 
 
@@ -95,6 +96,23 @@ def draw_background(canvas, doc):
         )
 
 
+def draw_footer(canvas, doc):
+    canvas.saveState()
+    canvas.setFont("Helvetica", 9)
+    canvas.setFillColor(colors.grey)
+    canvas.drawCentredString(
+        A4[0] / 2,
+        1.2 * cm,
+        "Riccardo Rispoli – Fisioterapista OMPT"
+    )
+    canvas.restoreState()
+
+
+def draw_background_and_footer(canvas, doc):
+    draw_background(canvas, doc)
+    draw_footer(canvas, doc)
+
+
 # --------------------------------------------------
 # GENERA PDF
 # --------------------------------------------------
@@ -113,10 +131,9 @@ def genera_pdf(scheda):
     styles = getSampleStyleSheet()
 
     styles.add(ParagraphStyle(
-        name="Titolo",
+        name="HeaderTitle",
         fontSize=18,
-        alignment=1,
-        spaceAfter=12
+        leading=22
     ))
 
     styles.add(ParagraphStyle(
@@ -133,16 +150,24 @@ def genera_pdf(scheda):
 
     story = []
 
-    # LOGO LOCALE (SAFE)
+    # ---------------- HEADER ----------------
+    logo = Spacer(4 * cm, 1 * cm)
     if os.path.exists("logo.png"):
-        story.append(Image("logo.png", width=4 * cm, height=2 * cm))
+        logo = Image("logo.png", width=3.5 * cm)
 
-    story.append(Spacer(1, 10))
-    story.append(Paragraph("Programma esercizi personalizzato", styles["Titolo"]))
+    title = Paragraph("<b>Programma esercizi personalizzato</b>", styles["HeaderTitle"])
 
-    story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
-    story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
-    story.append(Spacer(1, 12))
+    header = Table(
+        [[logo, title]],
+        colWidths=[4 * cm, 12 * cm],
+        style=[
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ]
+    )
+
+    story.append(header)
 
     story.append(Table(
         [[""]],
@@ -150,42 +175,58 @@ def genera_pdf(scheda):
         style=[("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.grey)]
     ))
 
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12))
 
+    story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
+    story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
+    story.append(Spacer(1, 16))
+
+    # ---------------- ESERCIZI ----------------
     for ex in scheda:
+        # immagine esercizio
+        img_path = f"images/{ex['nome']}.png"
+        if os.path.exists(img_path):
+            esercizio_img = Image(img_path, width=3.5 * cm)
+        else:
+            esercizio_img = Spacer(3.5 * cm, 3 * cm)
+
+        # QR
         qr = qrcode.make(ex["link_video"])
         qr_buf = io.BytesIO()
         qr.save(qr_buf)
         qr_buf.seek(0)
+        qr_img = Image(qr_buf, width=2.5 * cm)
 
-        qr_img = Image(qr_buf, width=3 * cm, height=3 * cm)
-
-        testo = [
-            Paragraph(ex["nome"], styles["Bold"]),
-            Paragraph(f"Serie: {ex['serie']} – Ripetizioni: {ex['ripetizioni']}", styles["Testo"]),
-            Paragraph(ex["descrizione"], styles["Testo"])
-        ]
+        testo = Paragraph(
+            f"""
+            <b>{ex['nome']}</b><br/>
+            {ex['descrizione']}<br/><br/>
+            <b>Serie:</b> {ex['serie']} &nbsp;&nbsp;
+            <b>Ripetizioni:</b> {ex['ripetizioni']}
+            """,
+            styles["Testo"]
+        )
 
         card = Table(
-            [[qr_img, testo]],
-            colWidths=[3.5 * cm, 11.5 * cm],
-            style=TableStyle([
+            [[esercizio_img, testo, qr_img]],
+            colWidths=[4 * cm, 9 * cm, 3 * cm],
+            style=[
                 ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ])
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
         )
 
         story.append(card)
-        story.append(Spacer(1, 12))
+        story.append(Spacer(1, 14))
 
     doc.build(
         story,
-        onFirstPage=draw_background,
-        onLaterPages=draw_background
+        onFirstPage=draw_background_and_footer,
+        onLaterPages=draw_background_and_footer
     )
 
     buffer.seek(0)
@@ -200,6 +241,6 @@ if st.button("Genera PDF") and scheda:
     st.download_button(
         "Scarica PDF",
         pdf,
-        file_name="programma_esercizi.pdf",
+        file_name="programma_esercizi_personalizzato.pdf",
         mime="application/pdf"
     )

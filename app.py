@@ -2,9 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import io
-import glob
 import qrcode
-
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, KeepTogether, PageBreak
 )
@@ -61,10 +59,8 @@ esercizi_scelti = st.multiselect(
 )
 
 scheda = []
-
 for nome in esercizi_scelti:
     row = df_distretto[df_distretto["nome"] == nome].iloc[0]
-
     c1, c2 = st.columns(2)
     with c1:
         serie = st.number_input(f"Serie – {nome}", 1, 10, 3)
@@ -76,43 +72,40 @@ for nome in esercizi_scelti:
         "serie": serie,
         "ripetizioni": rip
     })
-import glob, os
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-st.divider()
-st.subheader("Test immagini esercizi")
-
-for ex in scheda:
-    # prova a trovare l'immagine
-    img_files = glob.glob(os.path.join(BASE_DIR, "images", f"{ex['nome']}.*"))
-    st.write(f"Esercizio: '{ex['nome']}'")
-    st.write(f"Cercando: {os.path.join(BASE_DIR, 'images', f'{ex['nome']}.*')}")
-    st.write(f"Trovati: {img_files}")
-st.divider()
 
 # --------------------------------------------------
-# BACKGROUND PDF
+# FUNZIONE TROVA IMMAGINE INTELLIGENTE
+# --------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+IMAGE_DIR = os.path.join(BASE_DIR, "images")
+
+def trova_immagine(nome_esercizio):
+    """
+    Cerca un'immagine nella cartella IMAGE_DIR che corrisponda al nome dell'esercizio.
+    Supporta .jpg, .jpeg, .png, ignora maiuscole/minuscole e spazi extra.
+    """
+    nome_norm = nome_esercizio.strip().lower().replace(" ", "")
+    if not os.path.exists(IMAGE_DIR):
+        return None
+    for file in os.listdir(IMAGE_DIR):
+        file_norm = os.path.splitext(file)[0].strip().lower().replace(" ", "")
+        if nome_norm == file_norm:
+            return os.path.join(IMAGE_DIR, file)
+    return None
+
+# --------------------------------------------------
+# BACKGROUND E FOOTER
 # --------------------------------------------------
 def draw_background(canvas, doc):
-    if os.path.exists("background.png"):
-        canvas.drawImage(
-            "background.png",
-            0,
-            0,
-            width=A4[0],
-            height=A4[1]
-        )
+    bg_path = os.path.join(BASE_DIR, "background.png")
+    if os.path.exists(bg_path):
+        canvas.drawImage(bg_path, 0, 0, width=A4[0], height=A4[1])
 
 def draw_footer(canvas, doc):
     canvas.saveState()
     canvas.setFont("Helvetica", 9)
     canvas.setFillColor(colors.grey)
-    canvas.drawCentredString(
-        A4[0] / 2,
-        1.2 * cm,
-        "Riccardo Rispoli – Fisioterapista OMPT"
-    )
+    canvas.drawCentredString(A4[0]/2, 1.2*cm, "Riccardo Rispoli – Fisioterapista OMPT")
     canvas.restoreState()
 
 def draw_background_and_footer(canvas, doc):
@@ -124,15 +117,13 @@ def draw_background_and_footer(canvas, doc):
 # --------------------------------------------------
 def genera_pdf(scheda):
     buffer = io.BytesIO()
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        leftMargin=2 * cm,
-        rightMargin=2 * cm,
-        topMargin=2 * cm,
-        bottomMargin=2 * cm
+        leftMargin=2*cm,
+        rightMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
     )
 
     styles = getSampleStyleSheet()
@@ -143,31 +134,24 @@ def genera_pdf(scheda):
     story = []
 
     # ---------------- HEADER ----------------
-    if os.path.exists(os.path.join(BASE_DIR, "logo.png")):
-        logo = Image(os.path.join(BASE_DIR, "logo.png"), width=3.5*cm, height=3.5*cm, kind="proportional")
+    logo_path = os.path.join(BASE_DIR, "logo.png")
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=3.5*cm, height=3.5*cm, kind="proportional")
     else:
         logo = Spacer(3.5*cm, 3.5*cm)
 
     title = Paragraph("<b>Programma esercizi personalizzato</b>", styles["HeaderTitle"])
-
     header = Table(
         [[logo, title]],
         colWidths=[4*cm, 12*cm],
         style=[
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("LEFTPADDING", (0,0), (-1,-1), 0),
+            ("RIGHTPADDING", (0,0), (-1,-1), 0)
         ]
     )
-
     story.append(header)
-
-    story.append(Table(
-        [[""]],
-        colWidths=[16*cm],
-        style=[("LINEBELOW", (0,0), (-1,-1), 0.5, colors.grey)]
-    ))
-
+    story.append(Table([[""]], colWidths=[16*cm], style=[("LINEBELOW",(0,0),(-1,-1),0.5,colors.grey)]))
     story.append(Spacer(1,12))
     story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
     story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
@@ -175,13 +159,12 @@ def genera_pdf(scheda):
 
     # ---------------- ESERCIZI ----------------
     for idx, ex in enumerate(scheda):
-        # cerca immagine esercizio in qualsiasi formato
-        img_files = glob.glob(os.path.join(BASE_DIR, "images", f"{ex['nome']}.*"))
-        if img_files:
-            img_path = img_files[0]
+        # immagine esercizio
+        img_path = trova_immagine(ex['nome'])
+        if img_path:
             esercizio_img = Image(img_path, width=3.5*cm, height=3.5*cm, kind="proportional")
         else:
-            print(f"Attenzione: nessuna immagine trovata per {ex['nome']}")
+            st.warning(f"Nessuna immagine trovata per '{ex['nome']}'")
             esercizio_img = Spacer(3.5*cm, 3.5*cm)
 
         # QR
@@ -191,14 +174,10 @@ def genera_pdf(scheda):
         qr_buf.seek(0)
         qr_img = Image(qr_buf, width=2.5*cm, height=2.5*cm, kind="proportional")
 
-        # testo esercizio
+        # testo
         testo = Paragraph(
-            f"""
-            <b>{ex['nome']}</b><br/>
-            {ex['descrizione']}<br/><br/>
-            <b>Serie:</b> {ex['serie']} &nbsp;&nbsp;
-            <b>Ripetizioni:</b> {ex['ripetizioni']}
-            """,
+            f"<b>{ex['nome']}</b><br/>{ex['descrizione']}<br/><br/>"
+            f"<b>Serie:</b> {ex['serie']} &nbsp;&nbsp; <b>Ripetizioni:</b> {ex['ripetizioni']}",
             styles["Testo"]
         )
 
@@ -212,18 +191,16 @@ def genera_pdf(scheda):
                 ("LEFTPADDING", (0,0), (-1,-1), 6),
                 ("RIGHTPADDING", (0,0), (-1,-1), 6),
                 ("TOPPADDING", (0,0), (-1,-1), 6),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 6)
             ]
         )
 
-        # Append card in KeepTogether + spacer
         story.append(KeepTogether([card, Spacer(1,14)]))
 
-        # Ogni 4 esercizi, forza PageBreak
+        # PageBreak ogni 4 esercizi
         if (idx+1) % 4 == 0:
             story.append(PageBreak())
 
-    # costruzione PDF
     doc.build(
         story,
         onFirstPage=draw_background_and_footer,
@@ -244,4 +221,3 @@ if st.button("Genera PDF") and scheda:
         file_name="programma_esercizi_personalizzato.pdf",
         mime="application/pdf"
     )
-

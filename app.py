@@ -215,9 +215,13 @@ def genera_pdf(scheda):
 # --------------------------------------------------
 if st.button("Genera PDF") and scheda:
     pdf = genera_pdf(scheda)
+    filename = f"{nome_paziente.replace(' ', '_')}_esercizi.pdf"
     st.download_button(
         "Scarica PDF",
         pdf,
-        file_name="programma_esercizi_personalizzato.pdf",
+        file_name=filename,
         mime="application/pdf"
     )
+
+    )
+

@@ -5,18 +5,13 @@ import io
 import qrcode
 
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+    SimpleDocTemplate, Paragraph, Spacer, Image, Table
 )
+from reportlab.platypus import KeepTogether, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-from reportlab.platypus import KeepTogether, PageBreak
-from reportlab.platypus import Spacer
-
-
-
-
 
 # --------------------------------------------------
 # STREAMLIT CONFIG
@@ -156,9 +151,10 @@ def genera_pdf(scheda):
     story = []
 
     # ---------------- HEADER ----------------
-    logo = Spacer(4 * cm, 1 * cm)
     if os.path.exists("logo.png"):
         logo = Image("logo.png", width=3.5 * cm, height=3.5 * cm, kind="proportional")
+    else:
+        logo = Spacer(3.5 * cm, 3.5 * cm)
 
     title = Paragraph("<b>Programma esercizi personalizzato</b>", styles["HeaderTitle"])
 
@@ -181,26 +177,27 @@ def genera_pdf(scheda):
     ))
 
     story.append(Spacer(1, 12))
-
     story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
     story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
     story.append(Spacer(1, 16))
 
     # ---------------- ESERCIZI ----------------
-    for ex in scheda:
+    for idx, ex in enumerate(scheda):
         # immagine esercizio
         img_path = f"images/{ex['nome']}.png"
         if os.path.exists(img_path):
-            esercizio_img = Image(img_path, width=3.5 * cm, kind="proportional")
+            esercizio_img = Image(img_path, width=3.5 * cm, height=3.5 * cm, kind="proportional")
         else:
-            esercizio_img = Spacer(3.5 * cm, 3 * cm, kind="proportional")
+            esercizio_img = Spacer(3.5 * cm, 3.5 * cm)
+
         # QR
         qr = qrcode.make(ex["link_video"])
         qr_buf = io.BytesIO()
         qr.save(qr_buf)
         qr_buf.seek(0)
-        qr_img = Image(qr_buf, width=2.5 * cm)
+        qr_img = Image(qr_buf, width=2.5 * cm, height=2.5 * cm, kind="proportional")
 
+        # testo esercizio
         testo = Paragraph(
             f"""
             <b>{ex['nome']}</b><br/>
@@ -211,6 +208,7 @@ def genera_pdf(scheda):
             styles["Testo"]
         )
 
+        # card esercizio
         card = Table(
             [[esercizio_img, testo, qr_img]],
             colWidths=[4 * cm, 9 * cm, 3 * cm],
@@ -224,15 +222,14 @@ def genera_pdf(scheda):
             ]
         )
 
-        story.append(
-    KeepTogether([
-        card,
-        Spacer(1, 14)
-    ])
-)
-story.append(Spacer(1, 0.2 * cm))
-story.append(PageBreak())
+        # Append card in KeepTogether + spacer
+        story.append(KeepTogether([card, Spacer(1, 14)]))
 
+        # Ogni X esercizi, forza PageBreak (opzionale)
+        if (idx + 1) % 4 == 0:  # esempio: 4 esercizi per pagina
+            story.append(PageBreak())
+
+    # costruzione PDF
     doc.build(
         story,
         onFirstPage=draw_background_and_footer,
@@ -254,4 +251,3 @@ if st.button("Genera PDF") and scheda:
         file_name="programma_esercizi_personalizzato.pdf",
         mime="application/pdf"
     )
-

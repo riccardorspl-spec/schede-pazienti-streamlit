@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import os
 import io
+import glob
 import qrcode
 
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Image, Table
+    SimpleDocTemplate, Paragraph, Spacer, Image, Table, KeepTogether, PageBreak
 )
-from reportlab.platypus import KeepTogether, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
@@ -20,7 +20,6 @@ st.set_page_config(page_title="Programma esercizi personalizzato")
 st.title("Programma esercizi personalizzato")
 st.divider()
 
-
 # --------------------------------------------------
 # LOAD CSV
 # --------------------------------------------------
@@ -31,9 +30,7 @@ def load_csv():
     df["distretto"] = df["distretto"].astype(str)
     return df
 
-
 df = load_csv()
-
 
 # --------------------------------------------------
 # INPUT PAZIENTE
@@ -47,7 +44,6 @@ with col2:
     motivo = st.text_input("Motivo della visita")
 
 st.divider()
-
 
 # --------------------------------------------------
 # SELEZIONE ESERCIZI
@@ -81,7 +77,6 @@ for nome in esercizi_scelti:
         "ripetizioni": rip
     })
 
-
 # --------------------------------------------------
 # BACKGROUND PDF
 # --------------------------------------------------
@@ -95,7 +90,6 @@ def draw_background(canvas, doc):
             height=A4[1]
         )
 
-
 def draw_footer(canvas, doc):
     canvas.saveState()
     canvas.setFont("Helvetica", 9)
@@ -107,11 +101,9 @@ def draw_footer(canvas, doc):
     )
     canvas.restoreState()
 
-
 def draw_background_and_footer(canvas, doc):
     draw_background(canvas, doc)
     draw_footer(canvas, doc)
-
 
 # --------------------------------------------------
 # GENERA PDF
@@ -129,24 +121,9 @@ def genera_pdf(scheda):
     )
 
     styles = getSampleStyleSheet()
-
-    styles.add(ParagraphStyle(
-        name="HeaderTitle",
-        fontSize=18,
-        leading=22
-    ))
-
-    styles.add(ParagraphStyle(
-        name="Bold",
-        fontSize=11,
-        fontName="Helvetica-Bold"
-    ))
-
-    styles.add(ParagraphStyle(
-        name="Testo",
-        fontSize=10,
-        leading=14
-    ))
+    styles.add(ParagraphStyle(name="HeaderTitle", fontSize=18, leading=22))
+    styles.add(ParagraphStyle(name="Bold", fontSize=11, fontName="Helvetica-Bold"))
+    styles.add(ParagraphStyle(name="Testo", fontSize=10, leading=14))
 
     story = []
 
@@ -183,9 +160,10 @@ def genera_pdf(scheda):
 
     # ---------------- ESERCIZI ----------------
     for idx, ex in enumerate(scheda):
-        # immagine esercizio
-        img_path = f"images/{ex['nome']}.png"
-        if os.path.exists(img_path):
+        # cerca immagine esercizio in qualsiasi formato
+        img_files = glob.glob(f"images/{ex['nome']}.*")
+        if img_files:
+            img_path = img_files[0]  # prende la prima trovata
             esercizio_img = Image(img_path, width=3.5 * cm, height=3.5 * cm, kind="proportional")
         else:
             esercizio_img = Spacer(3.5 * cm, 3.5 * cm)
@@ -225,8 +203,8 @@ def genera_pdf(scheda):
         # Append card in KeepTogether + spacer
         story.append(KeepTogether([card, Spacer(1, 14)]))
 
-        # Ogni X esercizi, forza PageBreak (opzionale)
-        if (idx + 1) % 4 == 0:  # esempio: 4 esercizi per pagina
+        # Ogni 4 esercizi, forza PageBreak
+        if (idx + 1) % 4 == 0:
             story.append(PageBreak())
 
     # costruzione PDF
@@ -238,7 +216,6 @@ def genera_pdf(scheda):
 
     buffer.seek(0)
     return buffer
-
 
 # --------------------------------------------------
 # DOWNLOAD

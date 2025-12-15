@@ -223,5 +223,5 @@ if st.button("Genera PDF") and scheda:
         mime="application/pdf"
     )
 
-    )
+
 

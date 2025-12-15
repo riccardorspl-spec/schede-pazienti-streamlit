@@ -11,6 +11,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
+from reportlab.platypus import KeepTogether, PageBreak
+from reportlab.platypus import Spacer
+
+
+
 
 
 # --------------------------------------------------
@@ -153,7 +158,7 @@ def genera_pdf(scheda):
     # ---------------- HEADER ----------------
     logo = Spacer(4 * cm, 1 * cm)
     if os.path.exists("logo.png"):
-        logo = Image("logo.png", width=3.5 * cm)
+        logo = Image("logo.png", width=3.5 * cm, height=3.5 * cm, kind="proportional")
 
     title = Paragraph("<b>Programma esercizi personalizzato</b>", styles["HeaderTitle"])
 
@@ -186,10 +191,9 @@ def genera_pdf(scheda):
         # immagine esercizio
         img_path = f"images/{ex['nome']}.png"
         if os.path.exists(img_path):
-            esercizio_img = Image(img_path, width=3.5 * cm)
+            esercizio_img = Image(img_path, width=3.5 * cm, kind="proportional")
         else:
-            esercizio_img = Spacer(3.5 * cm, 3 * cm)
-
+            esercizio_img = Spacer(3.5 * cm, 3 * cm, kind="proportional")
         # QR
         qr = qrcode.make(ex["link_video"])
         qr_buf = io.BytesIO()
@@ -220,8 +224,14 @@ def genera_pdf(scheda):
             ]
         )
 
-        story.append(card)
-        story.append(Spacer(1, 14))
+        story.append(
+    KeepTogether([
+        card,
+        Spacer(1, 14)
+    ])
+)
+story.append(Spacer(1, 0.2 * cm))
+story.append(PageBreak())
 
     doc.build(
         story,
@@ -244,3 +254,4 @@ if st.button("Genera PDF") and scheda:
         file_name="programma_esercizi_personalizzato.pdf",
         mime="application/pdf"
     )
+

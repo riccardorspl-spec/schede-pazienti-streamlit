@@ -76,6 +76,20 @@ for nome in esercizi_scelti:
         "serie": serie,
         "ripetizioni": rip
     })
+import glob, os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+st.divider()
+st.subheader("Test immagini esercizi")
+
+for ex in scheda:
+    # prova a trovare l'immagine
+    img_files = glob.glob(os.path.join(BASE_DIR, "images", f"{ex['nome']}.*"))
+    st.write(f"Esercizio: '{ex['nome']}'")
+    st.write(f"Cercando: {os.path.join(BASE_DIR, 'images', f'{ex['nome']}.*')}")
+    st.write(f"Trovati: {img_files}")
+st.divider()
 
 # --------------------------------------------------
 # BACKGROUND PDF
@@ -230,3 +244,4 @@ if st.button("Genera PDF") and scheda:
         file_name="programma_esercizi_personalizzato.pdf",
         mime="application/pdf"
     )
+

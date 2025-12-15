@@ -3,15 +3,9 @@ import pandas as pd
 import os
 import io
 import qrcode
-import requests
 
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Image,
-    Table,
-    TableStyle
+    SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
@@ -20,10 +14,9 @@ from reportlab.lib import colors
 
 
 # --------------------------------------------------
-# STREAMLIT CONFIG
+# CONFIG STREAMLIT
 # --------------------------------------------------
 st.set_page_config(page_title="Programma esercizi personalizzato")
-
 st.title("Programma esercizi personalizzato")
 st.divider()
 
@@ -40,16 +33,56 @@ def load_csv():
 
 df = load_csv()
 
-distretto = st.selectbox(
-    "Seleziona il distretto",
-    sorted(df["distretto"].unique())
-)
 
-esercizi_sel = df[df["distretto"] == distretto]
+# --------------------------------------------------
+# INPUT PAZIENTE
+# --------------------------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    nome_paziente = st.text_input("Nome e cognome paziente")
+
+with col2:
+    motivo = st.text_input("Motivo della visita")
+
+st.divider()
 
 
 # --------------------------------------------------
-# PDF BACKGROUND
+# SELEZIONE ESERCIZI
+# --------------------------------------------------
+distretto = st.selectbox(
+    "Seleziona distretto",
+    sorted(df["distretto"].unique())
+)
+
+df_distretto = df[df["distretto"] == distretto]
+
+esercizi_scelti = st.multiselect(
+    "Seleziona esercizi",
+    df_distretto["nome"].tolist()
+)
+
+scheda = []
+
+for nome in esercizi_scelti:
+    row = df_distretto[df_distretto["nome"] == nome].iloc[0]
+
+    c1, c2 = st.columns(2)
+    with c1:
+        serie = st.number_input(f"Serie – {nome}", 1, 10, 3)
+    with c2:
+        rip = st.number_input(f"Ripetizioni – {nome}", 1, 30, 10)
+
+    scheda.append({
+        **row,
+        "serie": serie,
+        "ripetizioni": rip
+    })
+
+
+# --------------------------------------------------
+# BACKGROUND PDF
 # --------------------------------------------------
 def draw_background(canvas, doc):
     if os.path.exists("background.png"):
@@ -63,9 +96,9 @@ def draw_background(canvas, doc):
 
 
 # --------------------------------------------------
-# PDF GENERATOR
+# GENERA PDF
 # --------------------------------------------------
-def genera_pdf(esercizi):
+def genera_pdf(scheda):
     buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(
@@ -83,14 +116,13 @@ def genera_pdf(esercizi):
         name="Titolo",
         fontSize=18,
         alignment=1,
-        spaceAfter=16
+        spaceAfter=12
     ))
 
     styles.add(ParagraphStyle(
-        name="Nome",
-        fontSize=12,
-        fontName="Helvetica-Bold",
-        spaceAfter=4
+        name="Bold",
+        fontSize=11,
+        fontName="Helvetica-Bold"
     ))
 
     styles.add(ParagraphStyle(
@@ -101,16 +133,16 @@ def genera_pdf(esercizi):
 
     story = []
 
-    # -------- LOGO (DOWNLOAD + BYTESIO) --------
-    logo_url = "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png"
-    response = requests.get(logo_url, timeout=10)
-    logo_bytes = io.BytesIO(response.content)
+    # LOGO LOCALE (SAFE)
+    if os.path.exists("logo.png"):
+        story.append(Image("logo.png", width=4 * cm, height=2 * cm))
 
-    story.append(Image(logo_bytes, width=4 * cm, height=4 * cm))
-    story.append(Spacer(1, 12))
-
-    # -------- TITOLO --------
+    story.append(Spacer(1, 10))
     story.append(Paragraph("Programma esercizi personalizzato", styles["Titolo"]))
+
+    story.append(Paragraph(f"<b>Paziente:</b> {nome_paziente}", styles["Testo"]))
+    story.append(Paragraph(f"<b>Motivo:</b> {motivo}", styles["Testo"]))
+    story.append(Spacer(1, 12))
 
     story.append(Table(
         [[""]],
@@ -120,28 +152,26 @@ def genera_pdf(esercizi):
 
     story.append(Spacer(1, 14))
 
-    # -------- ESERCIZI --------
-    for _, ex in esercizi.iterrows():
+    for ex in scheda:
         qr = qrcode.make(ex["link_video"])
-        qr_buffer = io.BytesIO()
-        qr.save(qr_buffer)
-        qr_buffer.seek(0)
+        qr_buf = io.BytesIO()
+        qr.save(qr_buf)
+        qr_buf.seek(0)
 
-        qr_img = Image(qr_buffer, width=3 * cm, height=3 * cm)
+        qr_img = Image(qr_buf, width=3 * cm, height=3 * cm)
 
         testo = [
-            Paragraph(ex["nome"], styles["Nome"]),
-            Paragraph(f"<b>Difficoltà:</b> {ex['difficoltà']}", styles["Testo"]),
-            Spacer(1, 4),
-            Paragraph(ex["descrizione"], styles["Testo"]),
+            Paragraph(ex["nome"], styles["Bold"]),
+            Paragraph(f"Serie: {ex['serie']} – Ripetizioni: {ex['ripetizioni']}", styles["Testo"]),
+            Paragraph(ex["descrizione"], styles["Testo"])
         ]
 
         card = Table(
             [[qr_img, testo]],
             colWidths=[3.5 * cm, 11.5 * cm],
             style=TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("BOX", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 8),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 8),
                 ("TOPPADDING", (0, 0), (-1, -1), 8),
@@ -163,17 +193,10 @@ def genera_pdf(esercizi):
 
 
 # --------------------------------------------------
-# UI
+# DOWNLOAD
 # --------------------------------------------------
-st.subheader(f"Esercizi – {distretto}")
-
-for _, row in esercizi_sel.iterrows():
-    st.markdown(f"**{row['nome']}**")
-    st.caption(row["descrizione"])
-    st.markdown("---")
-
-if st.button("Genera PDF"):
-    pdf = genera_pdf(esercizi_sel)
+if st.button("Genera PDF") and scheda:
+    pdf = genera_pdf(scheda)
     st.download_button(
         "Scarica PDF",
         pdf,

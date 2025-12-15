@@ -53,20 +53,15 @@ for e in esercizi:
 # --------------------------
 # PDF Background
 # --------------------------
-class BackgroundCanvas(canvas.Canvas):
-    def __init__(self, *args, **kwargs):
-        self.bg_image = "background.png"
-        super().__init__(*args, **kwargs)
-
-    def drawPageBackground(self):
-        if os.path.exists(self.bg_image):
-            self.drawImage(
-                self.bg_image,
-                0,
-                0,
-                width=A4[0],
-                height=A4[1]
-            )
+def draw_background(canvas, doc):
+    if os.path.exists("background.png"):
+        canvas.drawImage(
+            "background.png",
+            0,
+            0,
+            width=A4[0],
+            height=A4[1]
+        )
 
     def showPage(self):
         self.drawPageBackground()
@@ -196,9 +191,12 @@ if st.button("Genera PDF") and esercizi:
         story.append(Spacer(1, 0.4*cm))
         story.append(linea_es)
         story.append(Spacer(1, 0.6*cm))
-
-    doc.build(story, canvasmaker=BackgroundCanvas)
-
+        
+doc.build(
+    story,
+    onFirstPage=draw_background,
+    onLaterPages=draw_background
+)
     buffer.seek(0)
     st.download_button(
         "Scarica PDF",
@@ -206,3 +204,4 @@ if st.button("Genera PDF") and esercizi:
         file_name=f"Programma_{nome_paziente}.pdf",
         mime="application/pdf"
     )
+

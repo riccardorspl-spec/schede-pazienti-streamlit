@@ -78,12 +78,9 @@ for nome in esercizi_scelti:
 # --------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = os.path.join(BASE_DIR, "images")
+VIDEO_DIR = os.path.join(BASE_DIR, "videos")
 
 def trova_immagine(nome_esercizio):
-    """
-    Cerca un'immagine nella cartella IMAGE_DIR che corrisponda al nome dell'esercizio.
-    Supporta .jpg, .jpeg, .png, ignora maiuscole/minuscole e spazi extra.
-    """
     nome_norm = nome_esercizio.strip().lower().replace(" ", "")
     if not os.path.exists(IMAGE_DIR):
         return None
@@ -94,7 +91,7 @@ def trova_immagine(nome_esercizio):
     return None
 
 # --------------------------------------------------
-# BACKGROUND E FOOTER
+# BACKGROUND E FOOTER PDF
 # --------------------------------------------------
 def draw_background(canvas, doc):
     bg_path = os.path.join(BASE_DIR, "background.png")
@@ -159,7 +156,6 @@ def genera_pdf(scheda):
 
     # ---------------- ESERCIZI ----------------
     for idx, ex in enumerate(scheda):
-        # immagine esercizio
         img_path = trova_immagine(ex['nome'])
         if img_path:
             esercizio_img = Image(img_path, width=3.5*cm, height=3.5*cm, kind="proportional")
@@ -167,21 +163,18 @@ def genera_pdf(scheda):
             st.warning(f"Nessuna immagine trovata per '{ex['nome']}'")
             esercizio_img = Spacer(3.5*cm, 3.5*cm)
 
-        # QR
         qr = qrcode.make(ex["link_video"])
         qr_buf = io.BytesIO()
         qr.save(qr_buf)
         qr_buf.seek(0)
         qr_img = Image(qr_buf, width=2.5*cm, height=2.5*cm, kind="proportional")
 
-        # testo
         testo = Paragraph(
             f"<b>{ex['nome']}</b><br/>{ex['descrizione']}<br/><br/>"
             f"<b>Serie:</b> {ex['serie']} &nbsp;&nbsp; <b>Ripetizioni:</b> {ex['ripetizioni']}",
             styles["Testo"]
         )
 
-        # card esercizio
         card = Table(
             [[esercizio_img, testo, qr_img]],
             colWidths=[4*cm, 9*cm, 3*cm],
@@ -196,8 +189,6 @@ def genera_pdf(scheda):
         )
 
         story.append(KeepTogether([card, Spacer(1,14)]))
-
-        # PageBreak ogni 4 esercizi
         if (idx+1) % 4 == 0:
             story.append(PageBreak())
 
@@ -211,7 +202,7 @@ def genera_pdf(scheda):
     return buffer
 
 # --------------------------------------------------
-# DOWNLOAD
+# DOWNLOAD PDF
 # --------------------------------------------------
 if st.button("Genera PDF") and scheda:
     pdf = genera_pdf(scheda)
@@ -223,5 +214,33 @@ if st.button("Genera PDF") and scheda:
         mime="application/pdf"
     )
 
+# --------------------------------------------------
+# SCHEDA INTERATTIVA WEB/MOBILE
+# --------------------------------------------------
+st.divider()
+st.subheader("Scheda interattiva per il paziente")
 
+for idx, ex in enumerate(scheda):
+    st.markdown(f"### {idx+1}. {ex['nome']}")
+    st.markdown(ex['descrizione'])
+    st.markdown(f"**Serie:** {ex['serie']}  &nbsp;&nbsp; **Ripetizioni:** {ex['ripetizioni']}")
 
+    # Video embedded
+    if "youtube.com" in ex["link_video"] or "youtu.be" in ex["link_video"]:
+        st.video(ex["link_video"])
+    else:
+        video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
+        if os.path.exists(video_path):
+            st.video(video_path)
+        else:
+            st.info("Video non disponibile")
+
+    # Checkbox “fatto” + feedback
+    checkbox_key = f"{ex['nome']}_done"
+    fatto = st.checkbox("Fatto ✅", key=checkbox_key)
+    if fatto:
+        st.success("Bravo! 💪")
+    else:
+        st.info("Non ancora completato")
+
+    st.divider()

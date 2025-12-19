@@ -45,6 +45,11 @@ st.markdown("""
         box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
     
+    /* Testo principale - SCURO su sfondo bianco */
+    .main, p, span, div, label {
+        color: #333333 !important;
+    }
+    
     /* Titoli */
     h1, h2, h3 {
         color: #1e3c72 !important;
@@ -562,7 +567,7 @@ else:
                 salva_database(db)
                 
                 # Mostra link
-                app_url = "https://schede-pazienti-studiosauro.streamlit.app/"
+                app_url = "http://localhost:8501"  # Cambia con il tuo URL Streamlit Cloud
                 link_paziente = f"{app_url}?paziente={codice}"
                 
                 st.success(f"✅ Scheda creata per {nome_paziente}!")

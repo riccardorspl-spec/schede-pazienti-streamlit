@@ -589,7 +589,7 @@ else:
                 salva_database(db)
                 
                 # Mostra link
-                app_url = "http://localhost:8501"  # Cambia con il tuo URL Streamlit Cloud
+                app_url = "https://schede-pazienti-studiosauro.streamlit.app/"
                 link_paziente = f"{app_url}?paziente={codice}"
                 
                 st.success(f"✅ Scheda creata per {nome_paziente}!")

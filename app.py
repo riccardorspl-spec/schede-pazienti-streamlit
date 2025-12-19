@@ -43,8 +43,8 @@ def genera_codice_paziente(nome_paziente):
 # --------------------------------------------------
 # LOAD CSV
 # --------------------------------------------------
-@st.cache_data(ttl=60) 
-def load_csv()::
+@st.cache_data(ttl=60)  # Cache solo 60 secondi
+def load_csv():
     df = pd.read_csv("esercizi.csv")
     df = df.fillna("")
     df["distretto"] = df["distretto"].astype(str)

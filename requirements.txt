@@ -1,7 +1,0 @@
-streamlit
-pandas
-reportlab
-qrcode
-pillow
-streamlit-drawable-canvas
-

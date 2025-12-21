@@ -471,7 +471,7 @@ else:
         # Testo footer
         canvas.drawCentredString(A4[0]/2, 1.3*cm, "Riccardo Rispoli – Fisioterapista OMPT")
         canvas.setFont("Helvetica", 7)
-        canvas.drawCentredString(A4[0]/2, 1.0*cm, "📧 info@riccardorispoli.it  •  📱 +39 XXX XXX XXXX")
+        canvas.drawCentredString(A4[0]/2, 1.0*cm, "📧 riccardo.rspl@gmail.com  •  📱 +39 3313552300")
         
         # Numero pagina
         canvas.setFont("Helvetica-Bold", 8)
@@ -558,7 +558,7 @@ else:
             <font name="Helvetica-Bold" size="11" color="#1e3c72">MOTIVO:</font>
             <font name="Helvetica" size="11" color="#333333"> {motivo}</font><br/>
             <font name="Helvetica-Bold" size="11" color="#1e3c72">DATA:</font>
-            <font name="Helvetica" size="11" color="#333333"> {datetime.now().strftime("%d/%m/%Y")}</font>
+            <font name="Helvetica" size="11" color="#333333"> {date.now().strftime("%d/%m/%Y")}</font>
             </para>
             """
             

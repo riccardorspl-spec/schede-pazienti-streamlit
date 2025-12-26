@@ -506,7 +506,7 @@ if paziente_code:
             gia_fatto_oggi = oggi in storico_esercizio
             
             if gia_fatto_oggi:
-                st.success(f"✅ Già completato oggi ({oggi})! Ben fatto! 💪")
+                st.success(f"✅ Per oggi ho fatto ({oggi})! Ben fatto! 💪")
                 
                 # Bottone per annullare se per errore
                 if st.button(f"↩️ Annulla completamento di oggi", key=f"undo_{paziente_code}_{ex['nome']}"):
@@ -515,7 +515,7 @@ if paziente_code:
                     salva_database(db)
                     st.rerun()
             else:
-                if st.button(f"✅ Ho fatto questo esercizio oggi!", key=f"done_{paziente_code}_{ex['nome']}", type="primary"):
+                if st.button(f"✅ Fatto!", key=f"done_{paziente_code}_{ex['nome']}", type="primary"):
                     # Aggiungi data di oggi
                     paziente_data["storico"][ex["nome"]].append(oggi)
                     
@@ -527,7 +527,6 @@ if paziente_code:
                     db[paziente_code] = paziente_data
                     salva_database(db)
                     st.success("🎉 Esercizio completato registrato!")
-                    st.balloons()
                     st.rerun()
             
             # Mostra storico completo (ultime 10 date)

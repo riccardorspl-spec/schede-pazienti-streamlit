@@ -18,7 +18,7 @@ from reportlab.lib import colors
 # STREAMLIT CONFIG + PWA
 # --------------------------------------------------
 st.set_page_config(
-    page_title="Riccardo Rispoli - Fisioterapia", 
+    page_title="Riccardo Rispoli - Genera Scheda", 
     layout="centered",
     page_icon="💪",
     initial_sidebar_state="collapsed"
@@ -42,6 +42,7 @@ st.markdown("""
 # --------------------------------------------------
 st.markdown("""
 <style>
+    <style>
     /* Importa font moderno */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     
@@ -108,27 +109,26 @@ st.markdown("""
         color: #1e3c72 !important;
         font-weight: 600 !important;
     }
-   /* Elementi selezionati nel multiselect - TUTTI gli stili */
-.stMultiSelect span[data-baseweb="tag"],
-.stMultiSelect div[data-baseweb="tag"],
-.stMultiSelect [class*="tag"] {
-    background-color: #1e3c72 !important;
-    color: white !important;
-}
-
-/* Forza il testo bianco anche negli elementi interni */
-.stMultiSelect span[data-baseweb="tag"] span,
-.stMultiSelect div[data-baseweb="tag"] span,
-.stMultiSelect [class*="tag"] span {
-    color: white !important;
-}
-
-/* Icona X di chiusura bianca */
-.stMultiSelect span[data-baseweb="tag"] svg,
-.stMultiSelect div[data-baseweb="tag"] svg {
-    fill: white !important;
-}
-}
+    
+    /* Elementi selezionati nel multiselect */
+    .stMultiSelect span[data-baseweb="tag"],
+    .stMultiSelect div[data-baseweb="tag"] {
+        background-color: #1e3c72 !important;
+        color: white !important;
+    }
+    
+    /* Forza il testo bianco anche negli elementi interni */
+    .stMultiSelect span[data-baseweb="tag"] span,
+    .stMultiSelect div[data-baseweb="tag"] span {
+        color: white !important;
+    }
+    
+    /* Icona X di chiusura bianca */
+    .stMultiSelect span[data-baseweb="tag"] svg,
+    .stMultiSelect div[data-baseweb="tag"] svg {
+        fill: white !important;
+    }
+    
     /* Text color for input labels */
     .stTextInput > label,
     .stSelectbox > label,

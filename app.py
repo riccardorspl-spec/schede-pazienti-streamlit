@@ -653,55 +653,35 @@ else:
     # SELEZIONE ESERCIZI
     # --------------------------------------------------
     
-    # Se ha scelto un template, pre-seleziona gli esercizi
-    if esercizi_template:
-        st.info("💡 Gli esercizi del template sono già selezionati. Puoi aggiungerne altri o rimuoverne.")
-        esercizi_template_nomi = [ex["nome"] for ex in esercizi_template]
-    else:
-        esercizi_template_nomi = []
+distretto = st.selectbox(
+    "🎯 Seleziona distretto",
+    sorted(df["distretto"].unique())
+)
+
+# Mostra esercizi del distretto selezionato + esercizi "generale"
+df_distretto = df[(df["distretto"] == distretto) | (df["distretto"] == "generale")]
+
+# Se ha scelto un template, pre-seleziona SOLO gli esercizi disponibili nel distretto
+if esercizi_template:
+    # Filtra solo esercizi che esistono nel distretto selezionato
+    esercizi_disponibili = df_distretto["nome"].tolist()
+    esercizi_template_nomi = [ex["nome"] for ex in esercizi_template if ex["nome"] in esercizi_disponibili]
     
-    distretto = st.selectbox(
-        "🎯 Seleziona distretto",
-        sorted(df["distretto"].unique())
-    )
+    if esercizi_template_nomi:
+        st.info(f"💡 {len(esercizi_template_nomi)} esercizi del template trovati nel distretto '{distretto}'")
     
-    # Mostra esercizi del distretto selezionato + esercizi "generale"
-    df_distretto = df[(df["distretto"] == distretto) | (df["distretto"] == "generale")]
-    
-    esercizi_scelti = st.multiselect(
-        "📋 Seleziona esercizi",
-        df_distretto["nome"].tolist(),
-        default=esercizi_template_nomi if esercizi_template else []
-    )
-    
-    scheda = []
-    for nome in esercizi_scelti:
-        row = df_distretto[df_distretto["nome"] == nome].iloc[0]
-        
-        # Cerca se questo esercizio è nel template per usare i suoi valori
-        template_ex = next((ex for ex in esercizi_template if ex["nome"] == nome), None)
-        
-        if template_ex:
-            # Usa valori del template
-            default_serie = template_ex["serie"]
-            default_rip = template_ex["ripetizioni"]
-        else:
-            # Gestione sicura di serie e ripetizioni (possono essere vuote nel CSV)
-            try:
-                default_serie = int(row.get("serie", 3)) if row.get("serie") and str(row.get("serie")).strip() else 3
-            except (ValueError, TypeError):
-                default_serie = 3
-            
-            try:
-                default_rip = int(row.get("ripetizioni", 10)) if row.get("ripetizioni") and str(row.get("ripetizioni")).strip() else 10
-            except (ValueError, TypeError):
-                default_rip = 10
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            serie = st.number_input(f"Serie – {nome}", 1, 10, default_serie, key=f"serie_{nome}")
-        with c2:
-            rip = st.number_input(f"Ripetizioni – {nome}", 1, 30, default_rip, key=f"rip_{nome}")
+    # Mostra warning se alcuni esercizi del template non sono disponibili
+    esercizi_mancanti = [ex["nome"] for ex in esercizi_template if ex["nome"] not in esercizi_disponibili]
+    if esercizi_mancanti:
+        st.warning(f"⚠️ Alcuni esercizi del template non sono in questo distretto: {', '.join(esercizi_mancanti)}")
+else:
+    esercizi_template_nomi = []
+
+esercizi_scelti = st.multiselect(
+    "📋 Seleziona esercizi",
+    df_distretto["nome"].tolist(),
+    default=esercizi_template_nomi
+)
         
         scheda.append({
             "nome": row["nome"],

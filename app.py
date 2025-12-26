@@ -380,8 +380,6 @@ def trova_immagine(nome_esercizio):
 if paziente_code:
     db = carica_database()
     
-   https://schede-pazienti-studiosauro.streamlit.app?p=3a21cddd
-    
     if paziente_code not in db:
         st.error("❌ Codice paziente non valido!")
         st.warning(f"Il codice `{paziente_code}` non è stato trovato nel database.")

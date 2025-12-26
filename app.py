@@ -108,10 +108,26 @@ st.markdown("""
         color: #1e3c72 !important;
         font-weight: 600 !important;
     }
-    /* Elementi selezionati nel multiselect (sfondo rosso) */
-.stMultiSelect span[data-baseweb="tag"] {
+   /* Elementi selezionati nel multiselect - TUTTI gli stili */
+.stMultiSelect span[data-baseweb="tag"],
+.stMultiSelect div[data-baseweb="tag"],
+.stMultiSelect [class*="tag"] {
     background-color: #1e3c72 !important;
     color: white !important;
+}
+
+/* Forza il testo bianco anche negli elementi interni */
+.stMultiSelect span[data-baseweb="tag"] span,
+.stMultiSelect div[data-baseweb="tag"] span,
+.stMultiSelect [class*="tag"] span {
+    color: white !important;
+}
+
+/* Icona X di chiusura bianca */
+.stMultiSelect span[data-baseweb="tag"] svg,
+.stMultiSelect div[data-baseweb="tag"] svg {
+    fill: white !important;
+}
 }
     /* Text color for input labels */
     .stTextInput > label,

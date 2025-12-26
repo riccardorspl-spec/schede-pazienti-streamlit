@@ -108,7 +108,11 @@ st.markdown("""
         color: #1e3c72 !important;
         font-weight: 600 !important;
     }
-    
+    /* Elementi selezionati nel multiselect (sfondo rosso) */
+.stMultiSelect span[data-baseweb="tag"] {
+    background-color: #1e3c72 !important;
+    color: white !important;
+}
     /* Text color for input labels */
     .stTextInput > label,
     .stSelectbox > label,

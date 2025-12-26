@@ -562,7 +562,6 @@ if paziente_code:
     # Messaggio finale
     if completati == totale and totale > 0:
         st.success("🎉 Complimenti! Hai completato tutti gli esercizi! 🎉")
-        st.balloons()
 
 # --------------------------------------------------
 # MODALITÀ FISIOTERAPISTA (creazione schede)

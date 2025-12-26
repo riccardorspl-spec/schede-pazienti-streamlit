@@ -42,6 +42,18 @@ st.markdown("""
 # --------------------------------------------------
 st.markdown("""
 <style>
+/* OVERRIDE TOTALE MULTISELECT */
+div[data-baseweb="tag"] {
+    background-color: #1e3c72 !important;
+}
+
+div[data-baseweb="tag"] span {
+    color: white !important;
+}
+
+div[data-baseweb="tag"] svg {
+    fill: white !important;
+}
     /* Importa font moderno */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     

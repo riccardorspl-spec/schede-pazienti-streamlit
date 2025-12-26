@@ -288,7 +288,8 @@ def carica_database():
                     'data_creazione': record.get('data_creazione', ''),
                     'scheda': scheda,
                     'progressi': progressi,
-                    'note': note
+                    'note': note,
+                    'storico': storico
                 }
             except Exception as e:
                 st.warning(f"⚠️ Errore caricamento riga {idx+2}: {e}")
@@ -311,21 +312,23 @@ def salva_database(db):
         # Prepara i dati per Google Sheets
         rows = []
         for codice, data in db.items():
-            rows.append([
-                codice,
-                data.get('nome', ''),
-                data.get('motivo', ''),
-                data.get('data_creazione', ''),
-                json.dumps(data.get('scheda', []), ensure_ascii=False),
-                json.dumps(data.get('progressi', {}), ensure_ascii=False),
-                json.dumps(data.get('note', {}), ensure_ascii=False)
+          rows.append([
+    codice,
+    data.get('nome', ''),
+    data.get('motivo', ''),
+    data.get('data_creazione', ''),
+    json.dumps(data.get('scheda', []), ensure_ascii=False),
+    json.dumps(data.get('progressi', {}), ensure_ascii=False),
+    json.dumps(data.get('note', {}), ensure_ascii=False),
+    json.dumps(data.get('storico', {}), ensure_ascii=False)
+])
             ])
         
         # Cancella tutto tranne l'intestazione
         worksheet.clear()
         
         # Scrivi intestazione
-        worksheet.append_row(['codice', 'nome', 'motivo', 'data_creazione', 'scheda', 'progressi', 'note'])
+        worksheet.append_row(['codice', 'nome', 'motivo', 'data_creazione', 'scheda', 'progressi', 'note', 'storico'])
         
         # Scrivi i dati
         if rows:

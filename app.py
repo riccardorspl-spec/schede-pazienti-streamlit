@@ -513,22 +513,6 @@ def trova_immagine(nome_esercizio):
 if paziente_code:
     db = carica_database()
     
-    # DEBUG - Mostra info di debug (rimuovere dopo aver sistemato)
-    with st.expander("🔍 DEBUG INFO (per te, non per il paziente)"):
-        st.write(f"**Codice cercato:** `{paziente_code}`")
-        st.write(f"**Codici nel database:** `{list(db.keys())}`")
-        st.write(f"**Numero pazienti:** {len(db)}")
-        if db:
-            st.write("**Primo paziente (esempio):**")
-            first_code = list(db.keys())[0]
-            st.json({first_code: db[first_code]})
-    
-    if paziente_code not in db:
-        st.error("❌ Codice paziente non valido!")
-        st.warning(f"Il codice `{paziente_code}` non è stato trovato nel database.")
-        st.info(f"Codici disponibili: {', '.join(list(db.keys())[:5])}...")
-        st.stop()
-    
     paziente_data = db[paziente_code]
     
     # Header con logo

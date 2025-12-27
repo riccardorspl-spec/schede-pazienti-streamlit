@@ -600,6 +600,16 @@ if paziente_code:
             })
             
             st.line_chart(df_grafico.set_index("Data"), height=300, use_container_width=True)
+
+            # Dopo le statistiche base, prima dei grafici
+if st.button("📄 Genera Report Progresso", type="secondary"):
+    report_pdf = genera_report_progresso(paziente_data, paziente_code)
+    st.download_button(
+        "⬇️ Scarica Report PDF",
+        report_pdf,
+        file_name=f"Report_{paziente_data['nome'].replace(' ', '_')}.pdf",
+        mime="application/pdf"
+    )
             
             # Statistiche aggiuntive
             col_stat1, col_stat2, col_stat3 = st.columns(3)
@@ -766,7 +776,7 @@ if paziente_code:
         with st.expander("📹 Carica video della tua esecuzione"):
             st.markdown("""
             **Carica un video mentre esegui l'esercizio**  
-            Il fisioterapista lo vedrà e potrà darti feedback sulla tua tecnica.
+            Lo guarderò e potrò darti feedback sulla tua tecnica.
             """)
             
             # Info video caricati
@@ -887,7 +897,81 @@ else:
         st.markdown("**Area Fisioterapista** - Crea schede per i tuoi pazienti")
     
     st.divider()
+    # --------------------------------------------------
+# DASHBOARD STATISTICHE
+# --------------------------------------------------
+st.subheader("📊 Dashboard Statistiche")
+
+db_stats = carica_database()
+
+if db_stats:
+    # Calcola metriche
+    totale_pazienti = len(db_stats)
     
+    # Compliance media
+    compliance_list = []
+    pazienti_inattivi = []
+    video_da_vedere = 0
+    
+    oggi = datetime.now()
+    
+    for codice, data in db_stats.items():
+        # Compliance
+        tot_ex = len(data["scheda"])
+        compl_ex = sum(1 for ex in data["scheda"] if data.get("progressi", {}).get(ex["nome"], False))
+        if tot_ex > 0:
+            compliance_list.append((compl_ex / tot_ex) * 100)
+        
+        # Inattività (nessun esercizio negli ultimi 7 giorni)
+        storico = data.get("storico", {})
+        tutte_date = []
+        for date_list in storico.values():
+            tutte_date.extend(date_list)
+        
+        if tutte_date:
+            date_obj = [datetime.strptime(d, "%d/%m/%Y") for d in tutte_date]
+            ultima_data = max(date_obj)
+            giorni_inattivo = (oggi - ultima_data).days
+            if giorni_inattivo > 7:
+                pazienti_inattivi.append((data['nome'], giorni_inattivo))
+        elif len(tutte_date) == 0 and data.get('data_creazione'):
+            # Mai fatto esercizi
+            pazienti_inattivi.append((data['nome'], 999))
+        
+        # Video da vedere
+        video_pazienti = data.get("video_pazienti", {})
+        for ex_videos in video_pazienti.values():
+            for video in ex_videos:
+                if not video.get('feedback_fisio'):
+                    video_da_vedere += 1
+    
+    compliance_media = sum(compliance_list) / len(compliance_list) if compliance_list else 0
+    
+    # Mostra metriche
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    with col_m1:
+        st.metric("👥 Totale pazienti", totale_pazienti)
+    with col_m2:
+        st.metric("📊 Compliance media", f"{compliance_media:.0f}%")
+    with col_m3:
+        st.metric("⚠️ Pazienti inattivi", len(pazienti_inattivi))
+    with col_m4:
+        st.metric("📹 Video da vedere", video_da_vedere)
+    
+    # Pazienti inattivi (se ci sono)
+    if pazienti_inattivi:
+        with st.expander(f"⚠️ Pazienti inattivi ({len(pazienti_inattivi)})"):
+            for nome, giorni in sorted(pazienti_inattivi, key=lambda x: x[1], reverse=True):
+                if giorni == 999:
+                    st.markdown(f"- **{nome}**: Mai iniziato")
+                else:
+                    st.markdown(f"- **{nome}**: Inattivo da {giorni} giorni")
+    
+    st.divider()
+else:
+    st.info("Nessun paziente registrato ancora")
+
+st.divider()
     # --------------------------------------------------
     # INPUT PAZIENTE
     # --------------------------------------------------
@@ -1377,15 +1461,21 @@ else:
                 db = carica_database()
                 codice = genera_codice_paziente(nome_paziente)
                 
-                db[codice] = {
-                    "nome": nome_paziente,
-                    "motivo": motivo,
-                    "scheda": scheda,
-                    "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                    "progressi": {},
-                    "note": {},
-                    "video_pazienti": {}
-                }
+              # Calcola scadenza (4 settimane dalla creazione)
+data_creazione_dt = datetime.now()
+data_scadenza_dt = data_creazione_dt + datetime.timedelta(weeks=4)
+
+db[codice] = {
+    "nome": nome_paziente,
+    "motivo": motivo,
+    "scheda": scheda,
+    "data_creazione": data_creazione_dt.strftime("%d/%m/%Y %H:%M"),
+    "data_scadenza": data_scadenza_dt.strftime("%d/%m/%Y"),
+    "progressi": {},
+    "note": {},
+    "video_pazienti": {},
+    "storico": {}
+}
                 
                 salva_database(db)
                 
@@ -1418,7 +1508,123 @@ else:
                 qr.save(qr_buf, format="PNG")
                 qr_buf.seek(0)
                 st.image(qr_buf, caption="QR Code per accesso rapido", width=300)
+    def genera_report_progresso(paziente_data, paziente_code):
+    """Genera report PDF con grafici progresso"""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
     
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=2*cm,
+        rightMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
+    )
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="ReportTitle",
+        fontName="Helvetica-Bold",
+        fontSize=20,
+        textColor=colors.HexColor("#1e3c72"),
+        spaceAfter=20
+    ))
+    
+    story = []
+    
+    # Header
+    story.append(Paragraph(f"Report Progresso - {paziente_data['nome']}", styles["ReportTitle"]))
+    story.append(Paragraph(f"Generato il: {datetime.now().strftime('%d/%m/%Y')}", styles["Normal"]))
+    story.append(Spacer(1, 20))
+    
+    # Statistiche generali
+    scheda = paziente_data["scheda"]
+    storico_data = paziente_data.get("storico", {})
+    
+    # Calcola metriche
+    totale_esercizi = len(scheda)
+    completati = sum(1 for ex in scheda if paziente_data.get("progressi", {}).get(ex["nome"], False))
+    
+    # Date uniche
+    tutte_date = []
+    for esercizio_nome, date_list in storico_data.items():
+        tutte_date.extend(date_list)
+    date_uniche = sorted(list(set(tutte_date)), key=lambda x: datetime.strptime(x, "%d/%m/%Y"))
+    
+    giorni_allenamento = len(date_uniche)
+    
+    # Tabella statistiche
+    stats_data = [
+        ["Metrica", "Valore"],
+        ["Totale esercizi", str(totale_esercizi)],
+        ["Esercizi completati", str(completati)],
+        ["Giorni di allenamento", str(giorni_allenamento)],
+        ["Data inizio", paziente_data['data_creazione']],
+    ]
+    
+    stats_table = Table(stats_data, colWidths=[8*cm, 6*cm])
+    stats_table.setStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e3c72")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ])
+    
+    story.append(stats_table)
+    story.append(Spacer(1, 20))
+    
+    # Grafico andamento (se ci sono dati)
+    if date_uniche:
+        # Conta esercizi per data
+        date_conteggio = {}
+        for data in tutte_date:
+            date_conteggio[data] = date_conteggio.get(data, 0) + 1
+        
+        # Crea grafico
+        fig, ax = plt.subplots(figsize=(6, 3))
+        date_labels = [d for d in date_uniche]
+        counts = [date_conteggio[d] for d in date_uniche]
+        
+        ax.plot(range(len(date_labels)), counts, marker='o', color='#1e3c72', linewidth=2)
+        ax.set_xlabel('Giorno')
+        ax.set_ylabel('Esercizi completati')
+        ax.set_title('Andamento allenamenti')
+        ax.grid(True, alpha=0.3)
+        
+        # Salva grafico come immagine
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
+        img_buffer.seek(0)
+        plt.close()
+        
+        # Aggiungi al PDF
+        img = Image(img_buffer, width=14*cm, height=7*cm)
+        story.append(img)
+        story.append(Spacer(1, 20))
+    
+    # Dettaglio esercizi
+    story.append(Paragraph("Dettaglio Esercizi", styles["Heading2"]))
+    story.append(Spacer(1, 10))
+    
+    for idx, ex in enumerate(scheda):
+        nome_ex = ex["nome"]
+        volte = len(storico_data.get(nome_ex, []))
+        
+        ex_text = f"<b>{idx+1}. {nome_ex}</b> - Completato {volte} volte"
+        story.append(Paragraph(ex_text, styles["Normal"]))
+        story.append(Spacer(1, 5))
+    
+    # Build
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
     # --------------------------------------------------
     # GESTIONE PAZIENTI ESISTENTI
     # --------------------------------------------------
@@ -1431,6 +1637,33 @@ else:
         for codice, data in db.items():
             with st.expander(f"👤 {data['nome']} - {data['motivo']} ({data['data_creazione']})"):
                 st.markdown(f"**Codice:** `{codice}`")
+                # Check scadenza
+scadenza_str = data.get('data_scadenza', '')
+if scadenza_str:
+    try:
+        scadenza_dt = datetime.strptime(scadenza_str, "%d/%m/%Y")
+        oggi = datetime.now()
+        giorni_rimasti = (scadenza_dt - oggi).days
+        
+        if giorni_rimasti < 0:
+            alert = "⚠️ SCHEDA SCADUTA"
+            color = "red"
+        elif giorni_rimasti <= 7:
+            alert = f"⏰ SCADE TRA {giorni_rimasti} GIORNI"
+            color = "orange"
+        else:
+            alert = f"✓ Attiva (scade tra {giorni_rimasti} giorni)"
+            color = "green"
+        
+        # Aggiungi alert al titolo expander
+        titolo_expander = f"{data['nome']} - {data['motivo']} ({data['data_creazione']}) [{alert}]"
+    except:
+        titolo_expander = f"{data['nome']} - {data['motivo']} ({data['data_creazione']})"
+else:
+    titolo_expander = f"{data['nome']} - {data['motivo']} ({data['data_creazione']})"
+
+# USA titolo_expander invece del vecchio
+with st.expander(titolo_expander):
                 
                 totale = len(data["scheda"])
                 completati = sum(1 for ex in data["scheda"] if data.get("progressi", {}).get(ex["nome"], False))

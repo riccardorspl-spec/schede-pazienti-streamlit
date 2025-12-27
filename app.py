@@ -362,7 +362,6 @@ def notifica_video_caricato(nome_paziente, esercizio, email_fisio):
     </html>
     """
     return invia_email_notifica(email_fisio, oggetto, corpo)
-        return worksheet
     except Exception as e:
         st.error(f"Errore connessione Google Sheets: {e}")
         return None

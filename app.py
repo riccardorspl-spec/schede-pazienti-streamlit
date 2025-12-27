@@ -1084,7 +1084,7 @@ else:
         # Testo footer
         canvas.drawCentredString(A4[0]/2, 1.3*cm, "Riccardo Rispoli – Fisioterapista OMPT")
         canvas.setFont("Helvetica", 7)
-        canvas.drawCentredString(A4[0]/2, 1.0*cm, "📧 info@riccardorispoli.it  •  📱 +39 XXX XXX XXXX")
+        canvas.drawCentredString(A4[0]/2, 1.0*cm, "📧 riccardo.rspl@gmail.com  •  📱 +39 331 355 230 00")
         
         # Numero pagina
         canvas.setFont("Helvetica-Bold", 8)

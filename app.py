@@ -311,7 +311,7 @@ def delete_video_from_cloud(blob_name):
     except Exception as e:
         st.error(f"Errore eliminazione video: {e}")
         return False
-
+        
 # --------------------------------------------------
 # EMAIL NOTIFICATIONS (GRATIS con Gmail)
 # --------------------------------------------------
@@ -319,36 +319,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def invia_email_notifica(destinatario, oggetto, corpo):
-    """Invia email usando Gmail SMTP"""
-    try:
-        # Email settings (da Streamlit secrets)
-        if "email_fisio" not in st.secrets or "email_password" not in st.secrets:
-            return False
-        
-        sender_email = st.secrets["email_fisio"]
-        sender_password = st.secrets["email_password"]
-        
-        # Crea messaggio
-        msg = MIMEMultipart()
-        msg['From'] = sender_email
-        msg['To'] = destinatario
-        msg['Subject'] = oggetto
-        
-        msg.attach(MIMEText(corpo, 'html'))
-        
-        # Invia via Gmail SMTP
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
-        
-        return True
-    except Exception as e:
-        # Silenzioso per non bloccare l'app
-        return False
+invia_email_notifica
 
-def notifica_video_caricato(nome_paziente, esercizio, email_fisio):
+def notifica_video_caricato(nome_paziente, esercizio):
     """Notifica fisioterapista quando paziente carica video"""
+    email_fisio = "riccardo.rspl@gmail.com"
     oggetto = f"Nuovo video da {nome_paziente}"
     corpo = f"""
     <html>
@@ -362,9 +337,6 @@ def notifica_video_caricato(nome_paziente, esercizio, email_fisio):
     </html>
     """
     return invia_email_notifica(email_fisio, oggetto, corpo)
-    except Exception as e:
-        st.error(f"Errore connessione Google Sheets: {e}")
-        return None
 
 def carica_database():
     """Carica tutti i pazienti da Google Sheets"""

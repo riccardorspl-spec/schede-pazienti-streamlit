@@ -794,6 +794,7 @@ if paziente_code:
                 st.rerun()
         else:
             if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{idx}", type="primary"):
+                st.write("🔴 BOTTONE CLICCATO!!! DEBUG")
                 paziente_data["storico"][ex["nome"]].append(oggi)
                 
                 if "progressi" not in paziente_data:

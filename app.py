@@ -492,7 +492,22 @@ df = load_csv()
 # --------------------------------------------------
 # Supporta sia ?paziente=xxx che p=xxx (più corto per URL installabili)
 query_params = st.query_params
-paziente_code = query_params.get("p", None) or query_params.get("paziente", None)
+# Cerca parametro p nell'URL
+paziente_code = st.query_params.get("p")
+
+# Se non c'è parametro, mostra redirect per recuperare da localStorage
+if not paziente_code:
+    st.markdown("""
+    <script>
+        // Controlla se c'è un codice salvato
+        const savedCode = localStorage.getItem('paziente_code');
+        if (savedCode) {
+            // Reindirizza all'URL con il parametro
+            window.location.href = window.location.origin + '/?p=' + savedCode;
+        }
+    </script>
+    """, unsafe_allow_html=True)
+    st.stop()  # Ferma l'esecuzione mentre reindirizza
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = os.path.join(BASE_DIR, "images")
@@ -520,7 +535,15 @@ if paziente_code:
         st.info(f"Codici disponibili: {', '.join(list(db.keys())[:5])}...")
         st.stop()
     
-    paziente_data = db[paziente_code]
+   paziente_data = db[paziente_code]
+
+   # Salva codice nel browser per accesso rapido dalla home
+   st.markdown(f"""
+    <script>
+    // Salva il codice paziente nel localStorage
+    localStorage.setItem('paziente_code', '{paziente_code}');
+    </script>
+    """, unsafe_allow_html=True)
     
     # Header con logo
     logo_path = os.path.join(BASE_DIR, "logo.png")

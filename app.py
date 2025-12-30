@@ -817,7 +817,6 @@ if paziente_code:
                     db[paziente_code] = paziente_data
                     salva_database(db)
                     st.success("🎉 Esercizio completato registrato!")
-                    st.balloons()
                     st.rerun()
             
             # Mostra storico completo (ultime 10 date)
@@ -952,8 +951,7 @@ if paziente_code:
     
     # Messaggio finale
     if completati == totale and totale > 0:
-        st.success("🎉 Complimenti! Hai completato tutti gli esercizi! 🎉")
-        st.balloons()
+        st.success("Complimenti! Hai completato tutti gli esercizi!")
 
 # --------------------------------------------------
 # MODALITÀ FISIOTERAPISTA (creazione schede)

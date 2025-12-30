@@ -1601,10 +1601,14 @@ else:
                 st.markdown(f"**Progresso:** {completati}/{totale} esercizi completati ({progresso}%)")
                 
                 # Link paziente
-                app_url = "https://schede-pazienti-studiosauro.streamlit.app"
+                app_url = "https://schede-pazienti-app.streamlit.app""
                 link_paziente = f"{app_url}?p={codice}"
                 st.code(link_paziente, language=None)
                 
+                # Ottieni URL dinamicamente
+                import streamlit as st
+                app_url = st.get_option("browser.serverAddress") or "https://schede-pazienti-app.streamlit.app" 
+
                 # Dettaglio esercizi con note e statistiche
                 st.markdown("---")
                 st.markdown("### 📋 Dettaglio esercizi:")

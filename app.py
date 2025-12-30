@@ -368,7 +368,7 @@ def notifica_video_caricato(nome_paziente, esercizio):
     """
     return invia_email_notifica(email_fisio, oggetto, corpo)
     
-@st.cache_data(ttl=60)  # Cache per 60 secondi
+@st.cache_data(ttl=10)  # Cache per 10 secondi
 def carica_database():
     """Carica tutti i pazienti da Google Sheets"""
     try:

@@ -793,19 +793,20 @@ if paziente_code:
                     salva_database(db)
                     st.rerun()
             else:
-                if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{ex['nome']}", type="primary"):
-                    # Aggiungi data di oggi
+               if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{ex['nome']}", type="primary"):
+               # Aggiungi data di oggi
                     paziente_data["storico"][ex["nome"]].append(oggi)
-                    
-                    # Aggiorna anche il vecchio sistema progressi (per compatibilità)
-                    if "progressi" not in paziente_data:
-                        paziente_data["progressi"] = {}
-                    paziente_data["progressi"][ex["nome"]] = True
-                    
-                    db[paziente_code] = paziente_data
-                    salva_database(db)
-                    st.success("🎉 Esercizio completato registrato!")
-                    st.rerun()
+    
+               # Aggiorna anche il vecchio sistema progressi (per compatibilità)
+               if "progressi" not in paziente_data:
+                   paziente_data["progressi"] = {}
+                   paziente_data["progressi"][ex["nome"]] = True
+    
+                   db[paziente_code] = paziente_data
+                   salva_database(db)
+    
+                   st.success("✅ Esercizio completato registrato!")
+                   st.rerun()
             
             # Mostra storico completo (ultime 10 date)
             if volte_fatto > 0:

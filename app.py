@@ -747,10 +747,9 @@ if paziente_code:
                 difficolta = ex.get('difficoltà', 'N/A')
                 color = {"Facile": "#4caf50", "Medio": "#ff9800", "Difficile": "#f44336"}.get(difficolta, "#9e9e9e")
                 st.markdown(f"**Difficoltà:** <span style='background:{color};color:white;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;'>{difficolta}</span>", unsafe_allow_html=True)
-            
-          # Video embedded
-if "youtube.com" in ex["link_video"] or "youtu.be" in ex["link_video"]:
-    st.video(ex["link_video"])
+      # Video embedded
+            if "youtube.com" in ex["link_video"] or "youtu.be" in ex["link_video"]:
+                st.video(ex["link_video"])
             else:
                 video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
                 if os.path.exists(video_path):

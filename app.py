@@ -764,7 +764,7 @@ if paziente_code:
                     if os.path.exists(video_path):
                         st.video(video_path)
                     else:
-                        st.info("Video non disponibile"))
+                        st.info("Video non disponibile")
 ```
 
 ---

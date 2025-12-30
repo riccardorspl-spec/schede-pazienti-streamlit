@@ -495,20 +495,6 @@ query_params = st.query_params
 # Cerca parametro p nell'URL
 paziente_code = st.query_params.get("p")
 
-# Se non c'è parametro, mostra redirect per recuperare da localStorage
-if not paziente_code:
-    st.markdown("""
-    <script>
-        // Controlla se c'è un codice salvato
-        const savedCode = localStorage.getItem('paziente_code');
-        if (savedCode) {
-            // Reindirizza all'URL con il parametro
-            window.location.href = window.location.origin + '/?p=' + savedCode;
-        }
-    </script>
-    """, unsafe_allow_html=True)
-    st.stop()  # Ferma l'esecuzione mentre reindirizza
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = os.path.join(BASE_DIR, "images")
 VIDEO_DIR = os.path.join(BASE_DIR, "videos")

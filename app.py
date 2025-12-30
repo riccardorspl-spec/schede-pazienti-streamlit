@@ -643,7 +643,7 @@ if paziente_code:
     
     # Bottone Report PDF
     st.markdown("---")
-    if st.button("📄 Genera Report Progresso", type="secondary", use_container_width=True):
+    if st.button("📄 Genera Report Progresso", type="secondary", use_container_width="stretch"):
         with st.spinner("Generazione report in corso..."):
             report_pdf = genera_report_progresso(paziente_data, paziente_code)
             st.download_button(
@@ -651,7 +651,7 @@ if paziente_code:
                 report_pdf,
                 file_name=f"Report_{paziente_data['nome'].replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width="stretch"
             )
     st.markdown("---")
     
@@ -676,7 +676,7 @@ if paziente_code:
                 "Esercizi completati": conteggio_per_grafico
             })
             
-            st.line_chart(df_grafico.set_index("Data"), height=300, use_container_width=True)
+            st.line_chart(df_grafico.set_index("Data"), height=300, use_container_width="stretch")
             
             # Statistiche aggiuntive
             col_stat1, col_stat2, col_stat3 = st.columns(3)
@@ -738,7 +738,7 @@ if paziente_code:
             with col_img:
                 img_path = trova_immagine(ex['nome'])
                 if img_path and os.path.exists(img_path):
-                    st.image(img_path, use_container_width=True)
+                    st.image(img_path, use_container_width="stretch")
             
             with col_info:
                 st.markdown(f"**Descrizione:** {ex['descrizione']}")

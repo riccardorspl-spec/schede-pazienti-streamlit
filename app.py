@@ -768,18 +768,6 @@ if paziente_code:
 ```
 
 ---
-
-## 🎯 COSA FA:
-
-**PRIMA:**
-```
-https://youtube.com/shorts/OPqEen_UBr8?feature=share
-    ↓ split("/shorts/")[1]
-OPqEen_UBr8?feature=share
-    ↓ split("?")[0]
-OPqEen_UBr8  ← ID pulito!
-    ↓
-https://www.youtube.com/watch?v=OPqEen_UBr8  ✅
             
             # Sistema contatore con storico date
             if "storico" not in paziente_data:

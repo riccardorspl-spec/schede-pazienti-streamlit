@@ -546,14 +546,12 @@ if paziente_code:
     • **Android**: Chrome → Menu (⋮) → "Installa app"
     """)
     
-    # Carica progressi
+  # Carica progressi
     if "progressi" not in paziente_data:
         paziente_data["progressi"] = {}
     
-    # Mostra esercizi
-    for idx, ex in enumerate(paziente_data["scheda"]):
-    
-    # Statistiche
+    # Statistiche (prima del loop!)
+    scheda = paziente_data["scheda"]
     totale = len(scheda)
     completati = sum(1 for ex in scheda if paziente_data["progressi"].get(ex["nome"], False))
     
@@ -633,7 +631,7 @@ if paziente_code:
     
     # Bottone Report PDF
     st.markdown("---")
-    if st.button("📄 Genera Report Progresso", type="secondary", use_container_width="stretch"):
+    if st.button("📄 Genera Report Progresso", type="secondary", width="stretch"):
         with st.spinner("Generazione report in corso..."):
             report_pdf = genera_report_progresso(paziente_data, paziente_code)
             st.download_button(
@@ -641,7 +639,7 @@ if paziente_code:
                 report_pdf,
                 file_name=f"Report_{paziente_data['nome'].replace(' ', '_')}.pdf",
                 mime="application/pdf",
-                use_container_width="stretch"
+                width="stretch"
             )
     st.markdown("---")
     
@@ -705,8 +703,11 @@ if paziente_code:
     
     st.divider()
     
-    # Lista esercizi interattiva con card moderne
+    # --------------------------------------------------
+    # LISTA ESERCIZI INTERATTIVI
+    # --------------------------------------------------
     st.subheader("I tuoi esercizi")
+    
     for idx, ex in enumerate(scheda):
         # Card container con styling
         with st.container():
@@ -719,7 +720,7 @@ if paziente_code:
                 box-shadow: 0 4px 15px rgba(0,0,0,0.1);
                 border-left: 5px solid #2a5298;
             '>
-                <h3 style='color: #1e3c72; margin-bottom: 1rem;'> {idx+1}. {ex['nome']}</h3>
+                <h3 style='color: #1e3c72; margin-bottom: 1rem;'>{idx+1}. {ex['nome']}</h3>
             </div>
             """, unsafe_allow_html=True)
             
@@ -728,7 +729,7 @@ if paziente_code:
             with col_img:
                 img_path = trova_immagine(ex['nome'])
                 if img_path and os.path.exists(img_path):
-                    st.image(img_path, use_container_width="stretch")
+                    st.image(img_path, width="stretch")
             
             with col_info:
                 st.markdown(f"**Descrizione:** {ex['descrizione']}")
@@ -738,23 +739,23 @@ if paziente_code:
                 difficolta = ex.get('difficoltà', 'N/A')
                 color = {"Facile": "#4caf50", "Medio": "#ff9800", "Difficile": "#f44336"}.get(difficolta, "#9e9e9e")
                 st.markdown(f"**Difficoltà:** <span style='background:{color};color:white;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;'>{difficolta}</span>", unsafe_allow_html=True)
-     # Video embedded
-                     
-                video_link = ex["link_video"]
-
-                # FIX: Converti YouTube Shorts in link normale
-                if "/shorts/" in video_link:
-                    video_id = video_link.split("/shorts/")[1].split("?")[0]
-                    video_link = f"https://www.youtube.com/watch?v={video_id}"
-
-                if "youtube.com" in video_link or "youtu.be" in video_link:
-                    st.video(video_link)
+            
+            # Video embedded
+            video_link = ex["link_video"]
+            
+            # FIX: Converti YouTube Shorts in link normale
+            if "/shorts/" in video_link:
+                video_id = video_link.split("/shorts/")[1].split("?")[0]
+                video_link = f"https://www.youtube.com/watch?v={video_id}"
+            
+            if "youtube.com" in video_link or "youtu.be" in video_link:
+                st.video(video_link)
+            else:
+                video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
+                if os.path.exists(video_path):
+                    st.video(video_path)
                 else:
-                    video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
-                    if os.path.exists(video_path):
-                        st.video(video_path)
-                    else:
-                        st.info("Video non disponibile")
+                    st.info("Video non disponibile")
             
             # Sistema contatore con storico date
             if "storico" not in paziente_data:
@@ -782,30 +783,29 @@ if paziente_code:
             
             # Check se già fatto oggi
             gia_fatto_oggi = oggi in storico_esercizio
-                
-                if gia_fatto_oggi:
-            st.success(f"✅ Già completato oggi ({oggi})! Ben fatto!")
             
-            if st.button(f"Annulla completamento di oggi", key=f"undo_{paziente_code}_{idx}"):
-                paziente_data["storico"][ex["nome"]].remove(oggi)
-                db[paziente_code] = paziente_data
-                salva_database(db)
-                st.cache_data.clear()
-                st.rerun()
-        else:
-            if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{idx}", type="primary"):
-                st.write("🔴 BOTTONE CLICCATO!!! DEBUG")
-                paziente_data["storico"][ex["nome"]].append(oggi)
+            if gia_fatto_oggi:
+                st.success(f"✅ Già completato oggi ({oggi})! Ben fatto!")
                 
-                if "progressi" not in paziente_data:
-                    paziente_data["progressi"] = {}
-                paziente_data["progressi"][ex["nome"]] = True
-                
-                db[paziente_code] = paziente_data
-                salva_database(db)
-                st.cache_data.clear()
-                st.success("✅ Esercizio completato registrato!")
-                st.rerun()
+                if st.button(f"Annulla completamento di oggi", key=f"undo_{paziente_code}_{idx}"):
+                    paziente_data["storico"][ex["nome"]].remove(oggi)
+                    db[paziente_code] = paziente_data
+                    salva_database(db)
+                    st.cache_data.clear()
+                    st.rerun()
+            else:
+                if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{idx}", type="primary"):
+                    paziente_data["storico"][ex["nome"]].append(oggi)
+                    
+                    if "progressi" not in paziente_data:
+                        paziente_data["progressi"] = {}
+                    paziente_data["progressi"][ex["nome"]] = True
+                    
+                    db[paziente_code] = paziente_data
+                    salva_database(db)
+                    st.cache_data.clear()
+                    st.success("✅ Esercizio completato registrato!")
+                    st.rerun()
             
             # Mostra storico completo (ultime 10 date)
             if volte_fatto > 0:
@@ -815,25 +815,28 @@ if paziente_code:
                         st.markdown(f"✅ {data}")
                     if volte_fatto > 10:
                         st.caption(f"... e altre {volte_fatto - 10} volte")
-        
-        # Note paziente
-        note_key = f"note_{paziente_code}_{ex['nome']}"
-        note_salvate = paziente_data.get("note", {}).get(ex["nome"], "")
-        
-        with st.expander("Aggiungi note personali"):
-            note = st.text_area(
-                "Note o feedback su questo esercizio",
-                value=note_salvate,
-                key=note_key,
-                height=100
-            )
-            if st.button(f"Salva nota", key=f"save_{note_key}"):
-                if "note" not in paziente_data:
-                    paziente_data["note"] = {}
-                paziente_data["note"][ex["nome"]] = note
-                db[paziente_code] = paziente_data
-                salva_database(db)
-                st.success("✓ Nota salvata!")
+            
+            # Note paziente
+            note_key = f"note_{paziente_code}_{ex['nome']}"
+            note_salvate = paziente_data.get("note", {}).get(ex["nome"], "")
+            
+            with st.expander("Aggiungi note personali"):
+                note = st.text_area(
+                    "Note o feedback su questo esercizio",
+                    value=note_salvate,
+                    key=note_key,
+                    height=100
+                )
+                
+                if st.button(f"Salva nota", key=f"save_{note_key}"):
+                    if "note" not in paziente_data:
+                        paziente_data["note"] = {}
+                    paziente_data["note"][ex["nome"]] = note
+                    db[paziente_code] = paziente_data
+                    salva_database(db)
+                    st.success("✓ Nota salvata!")
+            
+            st.divider()
         
         # Upload video esecuzione
         with st.expander("📹 Carica video della tua esecuzione"):

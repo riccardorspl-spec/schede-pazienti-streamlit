@@ -765,9 +765,6 @@ if paziente_code:
                         st.video(video_path)
                     else:
                         st.info("Video non disponibile")
-```
-
----
             
             # Sistema contatore con storico date
             if "storico" not in paziente_data:

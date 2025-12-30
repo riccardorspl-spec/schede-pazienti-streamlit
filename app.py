@@ -551,7 +551,7 @@ if paziente_code:
         paziente_data["progressi"] = {}
     
     # Mostra esercizi
-    scheda = paziente_data["scheda"]
+    for idx, ex in enumerate(paziente_data["scheda"]):
     
     # Statistiche
     totale = len(scheda)
@@ -782,11 +782,8 @@ if paziente_code:
             
             # Check se già fatto oggi
             gia_fatto_oggi = oggi in storico_esercizio
-            
-            if gia_fatto_oggi:
-                st.success(f"✅ Già completato oggi ({oggi})! Ben fatto! 💪")
                 
-if gia_fatto_oggi:
+                if gia_fatto_oggi:
             st.success(f"✅ Già completato oggi ({oggi})! Ben fatto!")
             
             if st.button(f"Annulla completamento di oggi", key=f"undo_{paziente_code}_{idx}"):

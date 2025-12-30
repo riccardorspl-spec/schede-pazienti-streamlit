@@ -786,27 +786,28 @@ if paziente_code:
             if gia_fatto_oggi:
                 st.success(f"✅ Già completato oggi ({oggi})! Ben fatto! 💪")
                 
-                # Bottone per annullare se per errore
-                if st.button(f"Annulla completamento di oggi", key=f"undo_{paziente_code}_{ex['nome']}"):
-                    paziente_data["storico"][ex["nome"]].remove(oggi)
-                    db[paziente_code] = paziente_data
-                    salva_database(db)
-                    st.rerun()
-            else:
-               if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{ex['nome']}", type="primary"):
-               # Aggiungi data di oggi
-                    paziente_data["storico"][ex["nome"]].append(oggi)
-    
-               # Aggiorna anche il vecchio sistema progressi (per compatibilità)
-               if "progressi" not in paziente_data:
-                   paziente_data["progressi"] = {}
-                   paziente_data["progressi"][ex["nome"]] = True
-    
-                   db[paziente_code] = paziente_data
-                   salva_database(db)
-    
-                   st.success("✅ Esercizio completato registrato!")
-                   st.rerun()
+if gia_fatto_oggi:
+            st.success(f"✅ Già completato oggi ({oggi})! Ben fatto!")
+            
+            if st.button(f"Annulla completamento di oggi", key=f"undo_{paziente_code}_{idx}"):
+                paziente_data["storico"][ex["nome"]].remove(oggi)
+                db[paziente_code] = paziente_data
+                salva_database(db)
+                st.cache_data.clear()
+                st.rerun()
+        else:
+            if st.button(f"Segna come completato oggi", key=f"done_{paziente_code}_{idx}", type="primary"):
+                paziente_data["storico"][ex["nome"]].append(oggi)
+                
+                if "progressi" not in paziente_data:
+                    paziente_data["progressi"] = {}
+                paziente_data["progressi"][ex["nome"]] = True
+                
+                db[paziente_code] = paziente_data
+                salva_database(db)
+                st.cache_data.clear()
+                st.success("✅ Esercizio completato registrato!")
+                st.rerun()
             
             # Mostra storico completo (ultime 10 date)
             if volte_fatto > 0:

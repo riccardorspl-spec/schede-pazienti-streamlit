@@ -760,6 +760,7 @@ if paziente_code:
                     video_link = f"https://www.youtube.com/watch?v={video_id}"
             
             if "youtube.com" in video_link or "youtu.be" in video_link:
+                st.write(f"DEBUG: {video_link}") 
                 st.video(video_link)
             else:
                 video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")

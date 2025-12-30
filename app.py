@@ -742,7 +742,7 @@ if paziente_code:
             
             with col_info:
                 st.markdown(f"**Descrizione:** {ex['descrizione']}")
-                st.markdown(f"**Serie:** `{ex['serie']}` | **Ripetizioni:** `{ex['ripetizioni']}`")
+                st.markdown(f"   • Serie: {ex['serie']} | Ripetizioni: {ex['ripetizioni']}"
                 
                 # Badge difficoltà con colori
                 difficolta = ex.get('difficoltà', 'N/A')

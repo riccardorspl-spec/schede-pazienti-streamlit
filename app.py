@@ -1533,7 +1533,7 @@ else:
                     "nome": nome_paziente,
                     "motivo": motivo,
                     "scheda": scheda,
-                    "data_creazione": datetime.now().strftime("%d/%m/%Y),
+                    "data_creazione": datetime.now().strftime("%d/%m/%Y"),
                     "progressi": {},
                     "note": {},
                     "video_pazienti": {}

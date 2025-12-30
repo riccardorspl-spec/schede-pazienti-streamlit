@@ -749,25 +749,38 @@ if paziente_code:
                 color = {"Facile": "#4caf50", "Medio": "#ff9800", "Difficile": "#f44336"}.get(difficolta, "#9e9e9e")
                 st.markdown(f"**Difficoltà:** <span style='background:{color};color:white;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;'>{difficolta}</span>", unsafe_allow_html=True)
      # Video embedded
-            video_link = ex["link_video"]
             
-            # FIX: Converti YouTube Shorts in link normale
-            if "/shorts/" in video_link:
-                video_link = video_link.replace("/shorts/", "/watch?v=").split("?")[0]
-                # Rimuovi parametri extra tipo ?feature=share
-                if "watch?v=" in video_link:
-                    video_id = video_link.split("watch?v=")[1].split("&")[0]
+                video_link = ex["link_video"]
+
+                # FIX: Converti YouTube Shorts in link normale
+                if "/shorts/" in video_link:
+                    # Estrai l'ID del video
+                    video_id = video_link.split("/shorts/")[1].split("?")[0]
                     video_link = f"https://www.youtube.com/watch?v={video_id}"
-            
-            if "youtube.com" in video_link or "youtu.be" in video_link:
-                st.write(f"DEBUG: {video_link}") 
-                st.video(video_link)
-            else:
-                video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
-                if os.path.exists(video_path):
-                    st.video(video_path)
+
+                if "youtube.com" in video_link or "youtu.be" in video_link:
+                    st.video(video_link)
                 else:
-                    st.info("📹 Video non disponibile")
+                    video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
+                    if os.path.exists(video_path):
+                        st.video(video_path)
+                    else:
+                        st.info("Video non disponibile")
+```
+
+---
+
+## 🎯 COSA FA:
+
+**PRIMA:**
+```
+https://youtube.com/shorts/OPqEen_UBr8?feature=share
+    ↓ split("/shorts/")[1]
+OPqEen_UBr8?feature=share
+    ↓ split("?")[0]
+OPqEen_UBr8  ← ID pulito!
+    ↓
+https://www.youtube.com/watch?v=OPqEen_UBr8  ✅
             
             # Sistema contatore con storico date
             if "storico" not in paziente_data:

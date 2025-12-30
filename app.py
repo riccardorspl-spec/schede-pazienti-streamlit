@@ -535,13 +535,13 @@ if paziente_code:
         st.info(f"Codici disponibili: {', '.join(list(db.keys())[:5])}...")
         st.stop()
     
-   paziente_data = db[paziente_code]
-
-   # Salva codice nel browser per accesso rapido dalla home
-   st.markdown(f"""
+    paziente_data = db[paziente_code]
+    
+    # Salva codice nel browser per accesso rapido dalla home
+    st.markdown(f"""
     <script>
-    // Salva il codice paziente nel localStorage
-    localStorage.setItem('paziente_code', '{paziente_code}');
+        // Salva il codice paziente nel localStorage
+        localStorage.setItem('paziente_code', '{paziente_code}');
     </script>
     """, unsafe_allow_html=True)
     

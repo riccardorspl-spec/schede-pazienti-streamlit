@@ -1542,7 +1542,7 @@ else:
                 salva_database(db)
                 
                 # Mostra link con parametro corto per PWA
-                app_url = "https://schede-pazienti-studiosauro.streamlit.app"
+                app_url = "https://schede-pazienti-app.streamlit.app"
                 link_paziente = f"{app_url}?p={codice}"
                 link_completo = f"{app_url}?paziente={codice}"  # Backup
                 

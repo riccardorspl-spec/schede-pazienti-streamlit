@@ -1601,7 +1601,7 @@ else:
                 st.markdown(f"**Progresso:** {completati}/{totale} esercizi completati ({progresso}%)")
                 
                 # Link paziente
-                app_url = "https://schede-pazienti-app.streamlit.app""
+                app_url = "https://schede-pazienti-app.streamlit.app"
                 link_paziente = f"{app_url}?p={codice}"
                 st.code(link_paziente, language=None)
                 

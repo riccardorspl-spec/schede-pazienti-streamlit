@@ -747,9 +747,19 @@ if paziente_code:
                 difficolta = ex.get('difficoltà', 'N/A')
                 color = {"Facile": "#4caf50", "Medio": "#ff9800", "Difficile": "#f44336"}.get(difficolta, "#9e9e9e")
                 st.markdown(f"**Difficoltà:** <span style='background:{color};color:white;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;'>{difficolta}</span>", unsafe_allow_html=True)
-      # Video embedded
-            if "youtube.com" in ex["link_video"] or "youtu.be" in ex["link_video"]:
-                st.video(ex["link_video"])
+     # Video embedded
+            video_link = ex["link_video"]
+            
+            # FIX: Converti YouTube Shorts in link normale
+            if "/shorts/" in video_link:
+                video_link = video_link.replace("/shorts/", "/watch?v=").split("?")[0]
+                # Rimuovi parametri extra tipo ?feature=share
+                if "watch?v=" in video_link:
+                    video_id = video_link.split("watch?v=")[1].split("&")[0]
+                    video_link = f"https://www.youtube.com/watch?v={video_id}"
+            
+            if "youtube.com" in video_link or "youtu.be" in video_link:
+                st.video(video_link)
             else:
                 video_path = os.path.join(VIDEO_DIR, f"{ex['nome']}.mp4")
                 if os.path.exists(video_path):

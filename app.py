@@ -262,7 +262,7 @@ def upload_video_to_cloud(file_data, paziente_code, esercizio_nome, timestamp):
         # Rendi accessibile (signed URL valido 7 giorni)
         url = blob.generate_signed_url(
             version="v4",
-            expiration=datetime.timedelta(days=7),
+            expiration=datetime.timedelta(days=365),
             method="GET"
         )
         
@@ -1533,7 +1533,7 @@ else:
                     "nome": nome_paziente,
                     "motivo": motivo,
                     "scheda": scheda,
-                    "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "data_creazione": datetime.now().strftime("%d/%m/%Y),
                     "progressi": {},
                     "note": {},
                     "video_pazienti": {}

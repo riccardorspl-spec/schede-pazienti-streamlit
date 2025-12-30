@@ -749,12 +749,11 @@ if paziente_code:
                 color = {"Facile": "#4caf50", "Medio": "#ff9800", "Difficile": "#f44336"}.get(difficolta, "#9e9e9e")
                 st.markdown(f"**Difficoltà:** <span style='background:{color};color:white;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;'>{difficolta}</span>", unsafe_allow_html=True)
      # Video embedded
-            
+                     
                 video_link = ex["link_video"]
 
                 # FIX: Converti YouTube Shorts in link normale
                 if "/shorts/" in video_link:
-                    # Estrai l'ID del video
                     video_id = video_link.split("/shorts/")[1].split("?")[0]
                     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -765,7 +764,7 @@ if paziente_code:
                     if os.path.exists(video_path):
                         st.video(video_path)
                     else:
-                        st.info("Video non disponibile")
+                        st.info("Video non disponibile"))
 ```
 
 ---

@@ -1744,15 +1744,13 @@ if scheda and nome_paziente:
         
         with col_btn2:
             if st.button("Crea link paziente", type="primary"):
-    # Salva nel database
-    db = carica_database()
-    codice = genera_codice_paziente(nome_paziente)
-    
-    # Calcola scadenza (4 settimane dalla creazione)
-    data_creazione_dt = datetime.now()
-    data_scadenza_dt = data_creazione_dt + datetime.timedelta(weeks=4)
-    
-    db[codice] = {
+                # Salva nel database
+                db = carica_database()
+                codice = genera_codice_paziente(nome_paziente)
+                
+                # Calcola scadenza (4 settimane dalla creazione)
+                data_creazione_dt = datetime.now()
+                data_scadenza_dt = data_creazione_dt + datetime.timedelta(weeks=4)
                 
                 db[codice] = {
                     "nome": nome_paziente,
@@ -1766,6 +1764,7 @@ if scheda and nome_paziente:
                     "video_pazienti": {},
                     "storico": {}
                 }
+                
                 salva_database(db)
                 
                 # Mostra link con parametro corto per PWA

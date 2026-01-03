@@ -362,7 +362,7 @@ def notifica_video_caricato(nome_paziente, esercizio):
         <p><strong>Paziente:</strong> {nome_paziente}</p>
         <p><strong>Esercizio:</strong> {esercizio}</p>
         <p>Accedi alla dashboard per visualizzare il video e lasciare feedback.</p>
-        <p><a href="https://schede-pazienti-studiosauro.streamlit.app" style="background:#1e3c72;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Vai alla dashboard</a></p>
+        <p><a href="https://schede-pazienti-streamlit.app" style="background:#1e3c72;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Vai alla dashboard</a></p>
     </body>
     </html>
     """

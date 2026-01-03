@@ -1744,9 +1744,15 @@ if scheda and nome_paziente:
         
         with col_btn2:
             if st.button("Crea link paziente", type="primary"):
-                # Salva nel database
-                db = carica_database()
-                codice = genera_codice_paziente(nome_paziente)
+    # Salva nel database
+    db = carica_database()
+    codice = genera_codice_paziente(nome_paziente)
+    
+    # Calcola scadenza (4 settimane dalla creazione)
+    data_creazione_dt = datetime.now()
+    data_scadenza_dt = data_creazione_dt + datetime.timedelta(weeks=4)
+    
+    db[codice] = {
                 
                 db[codice] = {
                     "nome": nome_paziente,

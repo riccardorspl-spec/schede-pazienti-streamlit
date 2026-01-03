@@ -1750,7 +1750,7 @@ if scheda and nome_paziente:
                 
                 # Calcola scadenza (4 settimane dalla creazione)
                 data_creazione_dt = datetime.now()
-                data_scadenza_dt = data_creazione_dt + datetime.timedelta(weeks=4)
+                data_scadenza_dt = data_creazione_dt + timedelta(weeks=4)
                 
                 db[codice] = {
                     "nome": nome_paziente,

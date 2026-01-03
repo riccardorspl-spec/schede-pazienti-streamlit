@@ -1256,20 +1256,19 @@ else:
     st.info("Nessun paziente registrato")
 
 st.divider()
-    
-    # --------------------------------------------------
-    # INPUT PAZIENTE
-    # --------------------------------------------------
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        nome_paziente = st.text_input("Nome e cognome paziente")
-    
-    with col2:
-        motivo = st.text_input("🩺 Motivo della visita")
-        
-    with col3:
-        email_paziente = st.text_input("📧 Email paziente (per promemoria)", placeholder="mario.rossi@gmail.com", help="Opzionale - serve per inviare promemoria automatici")
+
+# --------------------------------------------------
+# INPUT PAZIENTE
+# --------------------------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    nome_paziente = st.text_input("Nome e cognome paziente", placeholder="Mario Rossi")
+
+with col2:
+    motivo = st.text_input("🩺 Motivo della visita", placeholder="Lombalgia acuta")
+
+email_paziente = st.text_input("📧 Email paziente (per promemoria)", placeholder="mario.rossi@gmail.com", help="Opzionale - serve per inviare promemoria automatici")
     
     st.divider()
     

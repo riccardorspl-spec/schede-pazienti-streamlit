@@ -5,7 +5,7 @@ import io
 import qrcode
 import json
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, KeepTogether, PageBreak
 )

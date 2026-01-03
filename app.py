@@ -367,6 +367,51 @@ def notifica_video_caricato(nome_paziente, esercizio):
     </html>
     """
     return invia_email_notifica(email_fisio, oggetto, corpo)
+
+def invia_promemoria_paziente(nome_paziente, email_paziente, link_scheda):
+    """Invia promemoria esercizi al paziente"""
+    oggetto = "Promemoria: I tuoi esercizi oggi! 💪"
+    corpo = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Ciao {nome_paziente}! 👋</h1>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 18px; color: #333;">
+                È il momento di fare i tuoi esercizi! 💪
+            </p>
+            
+            <p style="color: #666;">
+                Ricordati che la costanza è la chiave per il recupero. 
+                Anche pochi minuti al giorno fanno la differenza! 🌟
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{link_scheda}" style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 15px 40px;
+                    text-decoration: none;
+                    border-radius: 50px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    display: inline-block;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                ">
+                    🏋️ Vai agli esercizi
+                </a>
+            </div>
+            
+            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+                Hai domande? Contattami! 📞
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    return invia_email_notifica(email_paziente, oggetto, corpo)
     
 @st.cache_data(ttl=10)  # Cache per 10 secondi
 def carica_database():
@@ -711,7 +756,37 @@ if paziente_code:
             st.info("📊 I dettagli appariranno quando completi gli esercizi!")
     
     st.divider()
+
+    st.divider()
     
+    # --------------------------------------------------
+    # IMPOSTAZIONI PAZIENTE
+    # --------------------------------------------------
+    with st.expander("⚙️ Impostazioni"):
+        st.markdown("**Configurazione promemoria**")
+        
+        email_attuale = paziente_data.get("email", "")
+        
+        if email_attuale:
+            st.success(f"✅ Email configurata: {email_attuale}")
+        else:
+            st.info("📧 Aggiungi la tua email per ricevere promemoria!")
+        
+        nuova_email = st.text_input(
+            "Email per promemoria",
+            value=email_attuale,
+            placeholder="tuaemail@gmail.com",
+            key="email_setting"
+        )
+        
+        if st.button("💾 Salva email", key="save_email"):
+            paziente_data["email"] = nuova_email
+            db[paziente_code] = paziente_data
+            salva_database(db)
+            st.success("✅ Email salvata! Ora riceverai i promemoria dal tuo fisioterapista!")
+            st.rerun()
+    
+    st.divider()
     # --------------------------------------------------
     # LISTA ESERCIZI INTERATTIVI
     # --------------------------------------------------
@@ -1047,6 +1122,140 @@ else:
         st.info("Nessun paziente registrato ancora")
     
     st.divider()
+
+    # --------------------------------------------------
+# GESTIONE PROMEMORIA EMAIL
+# --------------------------------------------------
+st.subheader("📧 Gestione Promemoria")
+
+db_promemoria = carica_database()
+
+if db_promemoria:
+    # Separa pazienti con e senza email
+    pazienti_con_email = []
+    pazienti_senza_email = []
+    
+    for codice, data in db_promemoria.items():
+        email = data.get("email", "")
+        nome = data.get("nome", "N/A")
+        
+        # Calcola ultimo accesso (ultima data esercizio)
+        storico = data.get("storico", {})
+        tutte_date = []
+        for date_list in storico.values():
+            tutte_date.extend(date_list)
+        
+        if tutte_date:
+            date_obj = [datetime.strptime(d, "%d/%m/%Y") for d in tutte_date]
+            ultima_data = max(date_obj)
+            giorni_inattivo = (datetime.now() - ultima_data).days
+            ultimo_accesso_str = f"{giorni_inattivo} giorni fa" if giorni_inattivo > 0 else "oggi"
+        else:
+            giorni_inattivo = 999
+            ultimo_accesso_str = "mai"
+        
+        if email:
+            pazienti_con_email.append({
+                "codice": codice,
+                "nome": nome,
+                "email": email,
+                "giorni_inattivo": giorni_inattivo,
+                "ultimo_accesso": ultimo_accesso_str
+            })
+        else:
+            pazienti_senza_email.append({
+                "codice": codice,
+                "nome": nome
+            })
+    
+    # Mostra pazienti con email
+    if pazienti_con_email:
+        st.markdown("**Pazienti con email configurata:**")
+        
+        # Filtri
+        col_filtro1, col_filtro2 = st.columns(2)
+        with col_filtro1:
+            mostra_tutti = st.checkbox("Mostra tutti", value=False)
+        with col_filtro2:
+            giorni_filtro = st.slider("Inattivi da almeno (giorni)", 0, 30, 2)
+        
+        # Lista pazienti
+        pazienti_selezionati = []
+        
+        for paz in sorted(pazienti_con_email, key=lambda x: x["giorni_inattivo"], reverse=True):
+            # Applica filtro
+            if not mostra_tutti and paz["giorni_inattivo"] < giorni_filtro:
+                continue
+            
+            # Icona status
+            if paz["giorni_inattivo"] == 0:
+                icona = "✅"
+                color = "green"
+            elif paz["giorni_inattivo"] <= 2:
+                icona = "🟡"
+                color = "orange"
+            else:
+                icona = "🔴"
+                color = "red"
+            
+            # Checkbox per selezione
+            col_check, col_info = st.columns([1, 10])
+            with col_check:
+                selected = st.checkbox(
+                    "",
+                    key=f"remind_{paz['codice']}",
+                    value=(paz["giorni_inattivo"] >= giorni_filtro)  # Pre-seleziona inattivi
+                )
+            with col_info:
+                st.markdown(f"{icona} **{paz['nome']}** - {paz['email']} - *ultimo accesso: {paz['ultimo_accesso']}*")
+            
+            if selected:
+                pazienti_selezionati.append(paz)
+        
+        st.divider()
+        
+        # Pulsanti azione
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
+        
+        with col_btn1:
+            if st.button(f"📧 Invia promemoria a {len(pazienti_selezionati)} pazienti", type="primary", disabled=len(pazienti_selezionati)==0):
+                with st.spinner("Invio promemoria in corso..."):
+                    successi = 0
+                    for paz in pazienti_selezionati:
+                        # Recupera link paziente
+                        link_paziente = f"https://schede-pazienti-app.streamlit.app/?p={paz['codice']}"
+                        
+                        # Invia email
+                        if invia_promemoria_paziente(paz["nome"], paz["email"], link_paziente):
+                            successi += 1
+                    
+                    if successi == len(pazienti_selezionati):
+                        st.success(f"✅ {successi} promemoria inviati con successo!")
+                    else:
+                        st.warning(f"⚠️ Inviati {successi}/{len(pazienti_selezionati)} promemoria")
+        
+        with col_btn2:
+            if st.button("Seleziona tutti inattivi"):
+                st.rerun()
+        
+        with col_btn3:
+            if st.button("Deseleziona tutti"):
+                st.rerun()
+        
+    else:
+        st.info("Nessun paziente ha configurato l'email ancora")
+    
+    # Mostra pazienti senza email
+    if pazienti_senza_email:
+        with st.expander(f"⚠️ Pazienti SENZA email ({len(pazienti_senza_email)})"):
+            for paz in pazienti_senza_email:
+                st.markdown(f"- **{paz['nome']}** - Modifica il paziente per aggiungere l'email")
+    
+    st.divider()
+else:
+    st.info("Nessun paziente registrato")
+
+st.divider()
     
     # --------------------------------------------------
     # INPUT PAZIENTE
@@ -1058,6 +1267,9 @@ else:
     
     with col2:
         motivo = st.text_input("🩺 Motivo della visita")
+        
+    with col3:
+        email_paziente = st.text_input("📧 Email paziente (per promemoria)", placeholder="mario.rossi@gmail.com", help="Opzionale - serve per inviare promemoria automatici")
     
     st.divider()
     
@@ -1537,16 +1749,18 @@ else:
                 db = carica_database()
                 codice = genera_codice_paziente(nome_paziente)
                 
-                db[codice] = {
-                    "nome": nome_paziente,
-                    "motivo": motivo,
-                    "scheda": scheda,
-                    "data_creazione": datetime.now().strftime("%d/%m/%Y"),
-                    "progressi": {},
-                    "note": {},
-                    "video_pazienti": {}
-                }
-                
+              db[codice] = {
+               "nome": nome_paziente,
+               "motivo": motivo,
+               "email": email_paziente if email_paziente else "",
+               "data_creazione": data_creazione_dt.strftime("%d/%m/%Y"),
+               "data_scadenza": data_scadenza_dt.strftime("%d/%m/%Y"),
+               "scheda": scheda,
+               "progressi": {},
+               "note": {},
+                "video_pazienti": {},
+               "storico": {}
+}
                 salva_database(db)
                 
                 # Mostra link con parametro corto per PWA
